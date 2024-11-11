@@ -1,0 +1,24 @@
+{% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <label>螺栓组所受轴向外力 (Q): <input type="number" step="0.01" name="Q" required></label><br> 
+        <label>螺栓组的螺栓个数 (Z): <input type="number" name="Z" required></label><br>
+        <label>횡방향 외력 (R, N): <input type="number" step="0.01" name="R" required></label><br>
+        <label>신뢰성 계수 (k_f, 1.2-1.5): <input type="number" step="0.01" name="k_f" value="1.2" required></label><br>
+        <label>마찰 계수 (μ): <input type="number" step="0.01" name="mu" value="0.15" required></label><br>
+        <label>마찰면 수 (m): <input type="number" name="m" value="1" required></label><br>
+        <label>회전 모멘트 (T, N∙mm): <input type="number" step="0.01" name="T"></label><br>
+        <label>볼트 중심 거리 리스트 (r, 쉼표로 구분): <input type="text" name="r_list" placeholder="예: 10, 20, 30"></label><br>
+        <button type="submit">계산</button>
+    </form>
+    {% if result %}
+        <h2>결과</h2>
+        <ul>
+            <li>축 방향 힘 (F): {{ result.F_axial }} N</li>
+            <li>횡방향 예압력 (F'): {{ result.F_pretension_lateral }} N</li>
+            <li>전단력 (F_s): {{ result.F_shear }} N</li>
+            <li>회전 모멘트 예압력 (F' 회전): {{ result.F_rotation_pretension }} N</li>
+            <li>최대 전단력 (F_smax): {{ result.F_shear_max }} N</li>
+        </ul>
+    {% endif %}

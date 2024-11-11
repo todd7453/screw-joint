@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>受力分析</title>
+    {% load static %}
+    <style>
+        body {
+            background-color: #FAF9F6; /* 오프 화이트 색상 */
+            text-align: center; /* 모든 텍스트를 가운데 정렬 */
+            font-family: Arial, simhei; /* 폰트 설정 */
+            overflow-x: hidden; /* 화면 밖으로 나가지 않도록 */
+        }
+        .menu-toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 20; /* 메뉴 바보다 위에 표시되도록 */
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+
+        .menu-toggle-btn:hover {
+            background-color: #575757;
+        }
+
+        /* 왼쪽 메뉴 바 */
+        .sidebar {
+            position: fixed; /* 메뉴 바 고정 */
+            top: 0;
+            left: -200px; /* 기본적으로 메뉴 바는 숨겨져 있음 */
+            height: 100%; /* 전체 높이 */
+            width: 200px; /* 메뉴 바 너비 */
+            background-color: #333;
+            padding-top: 20px;
+            padding-left: 20px;
+            box-sizing: border-box;
+            transition: left 0.3s ease; /* 메뉴 바가 나타나는 애니메이션 */
+            z-index: 50; /* 메뉴 바가 버튼과 페이지 콘텐츠 위에 오도록 설정 */
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 18px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #444;
+        }
+
+        .sidebar a:hover {
+            background-color: #575757;
+        }
+
+        /* 메뉴 칸 */
+        .menu-box {
+            background-color: #444; /* 배경색 */
+            margin-bottom: 10px; /* 각 메뉴 항목 간의 간격 */
+            top: 300px;
+            border-radius: 4px;
+            padding: 20px 10px;
+        }
+
+        .menu-box a {
+            display: block;
+            color: white;
+            font-size: 18px;
+            text-decoration: none;
+            padding: 15px;
+            background-color: #333;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .menu-box a:hover {
+            background-color: #575757;
+        }
+
+        /* 마우스가 왼쪽 끝에 올려졌을 때 메뉴 바가 보이도록 */
+        .sidebar-wrapper {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50px; /* 마우스를 올릴 영역을 더 넓게 설정 */
+            height: 100%;
+        }
+
+        /* 메뉴 바가 보이는 상태 */
+        .show-sidebar {
+            left: 0; /* 메뉴 바가 보이도록 왼쪽 위치를 0으로 설정 */
+        }
+        /* 페이지 콘텐츠 */
+        .container {
+            margin-left: 40px;
+            display: grid;
+            padding: 20px;
+            z-index: 1;
+        }
+        .calculator {
+            border: 2px solid #ccc; /* 테두리 */
+            border-radius: 10px; /* 둥근 테두리 */
+            padding: 20px;
+            background-color: white;
+            margin-bottom: 20px; /* 기본 간격 */
+            margin-right: 10px; /* 오른쪽 간격 */
+            z-index: 1
+        }
+        h1 {
+            font-size: 34px;
+            margin-bottom: 60px;
+        }
+        h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .image-container {
+            position: absolute; /* 절대 위치 지정 */
+            top: 50px; /* 상단 0px */
+            right: 20px; /* 왼쪽 20px */
+            flex-direction: column; /* 세로로 배치 */
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .input-container img {
+            width: 200px; /* 이미지 크기 조정 */
+            height: 200px; /* 비율 유지 */
+        }
+        input1 {
+            width: 100px; /* 입력 칸 너비 */
+            height: 80px;
+            padding: 5px; /* 입력 칸 패딩 */
+            border: 1px solid #ccc; /* 테두리 스타일 */
+            border-radius: 4px; /* 테두리 둥글게 */
+        }
+        input2 {
+            width: 100px; /* 입력 칸 너비 */
+            height: 80px;
+            padding: 5px; /* 입력 칸 패딩 */
+            border: 1px solid #ccc; /* 테두리 스타일 */
+            border-radius: 4px; /* 테두리 둥글게 */
+        }
+        button {
+            padding: 5px 10px; /* 버튼 패딩 */
+            background-color: #007BFF; /* 버튼 색상 */
+            color: white; /* 버튼 글자 색상 */
+            border: none; /* 버튼 테두리 제거 */
+            border-radius: 4px; /* 버튼 둥글게 */
+            cursor: pointer; /* 마우스 포인터 커서 */
+        }
+        button:hover {
+            background-color: #F1F1F4; /* 버튼 호버 시 색상 변경 */
+        }
+        .alert {
+            color: red; /* 경고 메시지 색상 */
+            margin-top: 10px; /* 위쪽 여백 */
+        }
+        label {
+            font-size: 16px;
+            margin-bottom: 5px;
+            text-align: left; /* 레이블 왼쪽 정렬 */
+        }
+
+    </style>
+</head>
+<body>
+        <!-- 메뉴 열기/닫기 버튼 -->
+        <button class="menu-toggle-btn" onclick="toggleSidebar()">MENU</button>
+
+        <div class="sidebar-wrapper"></div> <!-- 마우스가 올려졌을 때 메뉴 바 표시 -->
+    
+        <!-- 왼쪽 메뉴 바 -->
+        <div class="sidebar" id="sidebar">
+            <div class="menu-box">
+                <a href="{% url 'home' %}">Home</a>
+                <a href="{% url 'strength_calculation' %}">Strength Calculation</a>
+                <a href="{% url 'shape_material_analysis' %}">Shape & Material Analysis</a>
+                <a href="{% url 'thread_parameter_definition' %}">Thread Parameter Definition</a>
+                <a href="{% url 'standard_support' %}">Standard Support</a>
+            </div>
+        </div>
+
+    <h1>受力分析</h1>
+    <div class="container">
+        <div class="calculator">
+            <h2>承受轴向力计算<h2>
+            <img src="{% static 'calculator/受力1.png' %}" alt="이미지 1">
+            <form action="{% url 'shouli1'%}" method="POST">
+                {% csrf_token %}
+                <div class="input1">
+                    <label for="Q">螺栓组所受轴向外力</label>
+                    <input type="number" name="Q" placeholder="Q (N)" required step="0.01"> <!-- 소수 허용 -->
+                    <label for="Z">螺栓组的螺栓个数</label>
+                    <input type="number" name="Z" placeholder="(个)" required min="1"> <!-- Z는 1 이상의 정수만 허용 -->
+                    <button type="submit">计算</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="calculator">
+            <h2>承受横向力计算</h2> 
+            <img src="{% static 'calculator/受力2.png' %}" alt="이미지 1">
+            <form action="{% url 'shouli2'%}" method="POST">
+                {% csrf_token %}
+                <div class="input2">
+                    <label for="Q">螺栓组所受轴向外力</label>
+                    <input type="number" name="kf" placeholder="kf" required step="0.01" min="1.2" max="1.5"> <!-- k_f 범위 1.2~1.5 -->
+                    <label for="Q">螺栓组所受轴向外力</label>
+                    <input type="number" name="R" placeholder="R" required step="0.01">
+                    <label for="μ">连接摩擦副的摩擦因数</label>
+                    <input type="number" name="μ" placeholder="μ" required step="0.01">
+                    <label for="m">摩擦面数量，等于被连接件数量减一</label>
+                    <input type="number" name="m" placeholder="m" required min="1">
+                    <label for="Z1">螺栓组的螺栓个数</label>
+                    <input type="number" name="Z1" placeholder="Z" required min="1">
+                    <button type="submit">计算</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="calculator">
+            <h2>承受横向力计算</h2> 
+            <img src="{% static 'calculator/受力2.png' %}" alt="이미지 1">
+            <form action="{% url 'shouli2'%}" method="POST">
+                {% csrf_token %}
+                <div class="input2">
+                    <label for="Q">螺栓组所受轴向外力</label>
+                    <input type="number" name="kf" placeholder="kf" required step="0.01" min="1.2" max="1.5"> <!-- k_f 범위 1.2~1.5 -->
+                    <label for="Q">螺栓组所受轴向外力</label>
+                    <input type="number" name="R" placeholder="R" required step="0.01">
+                    <label for="μ">连接摩擦副的摩擦因数</label>
+                    <input type="number" name="μ" placeholder="μ" required step="0.01">
+                    <label for="m">摩擦面数量，等于被连接件数量减一</label>
+                    <input type="number" name="m" placeholder="m" required min="1">
+                    <label for="Z1">螺栓组的螺栓个数</label>
+                    <input type="number" name="Z1" placeholder="Z" required min="1">
+                    <button type="submit">计算</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="calculator">
+            <h2>承受横向力计算</h2> 
+            <img src="{% static 'calculator/受力2.png' %}" alt="이미지 1">
+            <form action="{% url 'shouli2'%}" method="POST">
+                {% csrf_token %}
+                <div class="input2">
+                    <label for="Q">螺栓组所受轴向外力</label>
+                    <input type="number" name="kf" placeholder="kf" required step="0.01" min="1.2" max="1.5"> <!-- k_f 범위 1.2~1.5 -->
+                    <label for="Q">螺栓组所受轴向外力</label>
+                    <input type="number" name="R" placeholder="R" required step="0.01">
+                    <label for="μ">连接摩擦副的摩擦因数</label>
+                    <input type="number" name="μ" placeholder="μ" required step="0.01">
+                    <label for="m">摩擦面数量，等于被连接件数量减一</label>
+                    <input type="number" name="m" placeholder="m" required min="1">
+                    <label for="Z1">螺栓组的螺栓个数</label>
+                    <input type="number" name="Z1" placeholder="Z" required min="1">
+                    <button type="submit">计算</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="calculator">
+            <h2>承受横向力计算</h2> 
+            <img src="{% static 'calculator/受力2.png' %}" alt="이미지 1">
+            <form action="{% url 'shouli2'%}" method="POST">
+                {% csrf_token %}
+                <div class="input2">
+                    <label for="Q">螺栓组所受轴向外力</label>
+                    <input type="number" name="kf" placeholder="kf" required step="0.01" min="1.2" max="1.5"> <!-- k_f 범위 1.2~1.5 -->
+                    <label for="Q">螺栓组所受轴向外力</label>
+                    <input type="number" name="R" placeholder="R" required step="0.01">
+                    <label for="μ">连接摩擦副的摩擦因数</label>
+                    <input type="number" name="μ" placeholder="μ" required step="0.01">
+                    <label for="m">摩擦面数量，等于被连接件数量减一</label>
+                    <input type="number" name="m" placeholder="m" required min="1">
+                    <label for="Z1">螺栓组的螺栓个数</label>
+                    <input type="number" name="Z1" placeholder="Z" required min="1">
+                    <button type="submit">计算</button>
+                </div>
+            </form>
+        </div>
+
+        {% if messages %}
+            <div class="alert">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+    <script>
+        let sidebar = document.getElementById('sidebar'); // 메뉴 바
+        let sidebarWrapper = document.querySelector('.sidebar-wrapper'); // 메뉴 바 외부 영역
+
+        // 메뉴 바 열기/닫기
+        function toggleSidebar() {
+            if (sidebar.style.left === '0px') {
+                sidebar.style.left = '-200px'; // 메뉴 바 닫기
+            } else {
+                sidebar.style.left = '0'; // 메뉴 바 열기
+            }
+        }
+
+        // 메뉴 바 바깥을 클릭하면 메뉴 닫기
+        document.addEventListener('click', function(event) {
+            // 메뉴 바와 바깥 영역을 제외한 클릭은 메뉴 닫기
+            if (!sidebar.contains(event.target) && !sidebarWrapper.contains(event.target) && !event.target.classList.contains('menu-toggle-btn')) {
+                sidebar.style.left = '-200px'; // 메뉴 바 닫기
+            }
+        });
+
+    </script>
+    </div>
+</body>
+</html>

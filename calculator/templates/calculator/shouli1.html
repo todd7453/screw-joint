@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>계산 결과</title>
+    <style>
+        body {
+            background-color: #FAF9F6; /* 오프 화이트 색상 */
+            text-align: center; /* 모든 텍스트를 가운데 정렬 */
+            font-family: Arial, sans-serif; /* 폰트 설정 */
+        }
+        .container {
+            margin-top: 20px;
+        }
+        .result {
+            font-size: 24px; /* 결과 글자 크기 */
+            font-weight: bold; /* 결과 글자 두껍게 */
+        }
+    </style>
+</head>
+<body>
+    <h1>计算结果</h1>
+    <div class="container">
+        <p class="Q">输入的 Q 值: {{ Q }} N</p>
+        <p class="Z1">输入的 Z 值: {{ Z }}</p>
+        <p class="shouli1">计算的 F 值: {{ shouli1 }} N</p>
+        <a href="{% url 'force_analysis' %}">再计算</a> <!-- 입력 페이지로 돌아가는 링크 -->
+    </div>
+</body>
+</html>

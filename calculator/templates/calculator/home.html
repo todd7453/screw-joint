@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Screw Joint analysis</title>
+    {% load static %}
+    <style>
+        body {
+            text-align: center; /* 모든 텍스트를 가운데 정렬 */
+            background-color: #FAF9F6;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 가로 2개 */
+            grid-template-rows: repeat(3, 1fr); /* 세로 3개 */
+            gap: 20px; /* 항목 간의 간격 */
+            margin-top: 20px;
+            justify-items: center; /* 가운데 정렬 */
+            padding: 20px;
+        }
+        .menu-item {
+            border: 1px solid #000; /* 테두리 */
+            padding: 10px;
+            text-align: center;
+            background-color: #F9F9F9; /* 배경색 추가 */
+            border-radius: 30px; /* 테두리 둥글게 */
+            width: 400px;
+            height: 250px;
+            margin: 0 auto;
+            left: 500px; /* 왼쪽에서의 위치 */
+        }
+        .menu-item img {
+            width: 200px; /* 이미지 크기 확대 */
+            height: 200px; /* 이미지 크기 확대 */
+            display: block;
+            margin: 0 auto;
+        }
+        .menu-item p {
+            margin-top: 10px;
+            font-size: 20px; /* 글자 크기 확대 */
+            font-weight: bold;
+        }
+
+        .sub-item {
+            border: 1px solid #000; /* 테두리 */
+            padding: 10px;
+            text-align: center;
+            background-color: #F9F9F9; /* 배경색 추가 */
+            border-radius: 30px; /* 테두리 둥글게 */
+            width: 400px;
+            height: 250px;
+            margin: 0 auto;
+            left: 500px; /* 왼쪽에서의 위치 */
+        }
+        /* .description1 {  */
+            position: fixed; /* 절대 위치 설정 */
+            top: 500px; /* 상단에서의 위치 */
+            left: 20px; /* 왼쪽에서의 위치 */
+            max-width: 300px; /* 최대 너비 설정 */
+            height: 400px;
+            background-color: #FAF9F6; /* 배경색 및 투명도 */
+            padding: 10px; /* 패딩 */
+            border-radius: 5px; /* 테두리 둥글게 */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0); /* 그림자 효과 */
+            font-size: 14px; /* 폰트 크기 설정 */
+        }
+
+    </style>
+</head>
+<body>
+    <h1>螺纹连接设计分析</h1>
+    <div class="container">
+        <div class="menu-item">
+            <a href="{% url 'force_analysis' %}">
+                <img src="{% static 'calculator/受力分析.png' %}" alt="受力分析">
+                <p>受力分析<p>
+            </a>
+        </div>
+        <div class="menu-item">
+            <a href="{% url 'strength_calculation' %}">
+                <img src="{% static 'calculator/强度计算.png' %}" alt="强度计算">
+                <p>强度计算<p>            
+            </a>
+        </div>
+        <div class="menu-item">
+            <a href="{% url 'shape_material_analysis' %}">
+                <img src="{% static 'calculator/按形态与材料螺栓分析.png' %}" alt="按形态与材料螺栓分析">
+                <p>按形态与材料螺栓分析<p>   
+            </a>
+        </div>
+        <div class="menu-item">
+            <a href="{% url 'standard_support' %}">
+                <img src="{% static 'calculator/标准化支持.png' %}" alt="标准化规范">
+                <p>标准化支持<p>
+            </a>
+        </div>
+        <div class="menu-item">
+            <a href="{% url 'thread_parameter_definition' %}">
+                <img src="{% static 'calculator/螺纹参数定义.png' %}" alt="螺纹参数定义">
+                <p>螺纹参数定义<p>
+            </a>
+        </div>
+        <div class="sub-item">
+            <p>本网页帮助您进行与螺纹连接相关的各种计算，</p>
+            <p>并告知您螺栓中可定义的各种参数。</p>
+            <p>开发者邮箱：todd8070@naver.com</p>
+        </div>
+    </div>
+        <div class="footer">
+            <p>version 1.0 | © 2024 螺纹连接分析</p>
+        </div>
+    </nav>
+</body>
+</html>
+
