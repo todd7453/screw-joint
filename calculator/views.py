@@ -87,6 +87,8 @@ def shouli2(request):
         'shouli2': shouli2
     })
 
+
+
 def strength_calculation(request):
     return render(request, 'calculator/strength_calculation.html')
 
