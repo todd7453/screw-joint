@@ -26,7 +26,9 @@ STATIC_URL = '/static/'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['screwjoint-app.herokuapp.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'screwjoint-app.herokuapp.com']
+
+SECRET_KEY = 'fprh8070'
 
 # Application definition
 
