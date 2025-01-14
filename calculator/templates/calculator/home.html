@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Screw Joint analysis</title>
+    <title>螺纹连接分析</title>
     {% load static %}
     <style>
         body {
             text-align: center; /* 모든 텍스트를 가운데 정렬 */
             background-color: #FAF9F6;
+            font-family: Arial, simsun; /* 폰트 설정 */
+            overflow-x: hidden; /* 화면 밖으로 나가지 않도록 */
         }
         .container {
             display: grid;
@@ -64,11 +66,19 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0); /* 그림자 효과 */
             font-size: 14px; /* 폰트 크기 설정 */
         }
-
+        .logo {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            z-index: 30; /* 메뉴 바보다 위에 표시되도록 */
+        }
     </style>
 </head>
 <body>
-    <h1>螺纹连接设计分析</h1>
+    <h1>
+        螺纹连接设计分析
+    </h1>
     <div class="container">
         <div class="menu-item">
             <a href="{% url 'force_analysis' %}">
@@ -79,13 +89,13 @@
         <div class="menu-item">
             <a href="{% url 'strength_calculation' %}">
                 <img src="{% static 'calculator/强度计算.png' %}" alt="强度计算">
-                <p>强度计算<p>            
+                <p>校核应力<p>            
             </a>
         </div>
         <div class="menu-item">
             <a href="{% url 'shape_material_analysis' %}">
                 <img src="{% static 'calculator/按形态与材料螺栓分析.png' %}" alt="按形态与材料螺栓分析">
-                <p>按形态与材料螺栓分析<p>   
+                <p>形态及设计分析<p>   
             </a>
         </div>
         <div class="menu-item">
@@ -106,9 +116,10 @@
             <p>开发者邮箱：todd8070@naver.com</p>
         </div>
     </div>
-        <div class="footer">
-            <p>version 1.0 | © 2024 螺纹连接分析</p>
-        </div>
+    <img src="{% static 'calculator/logo.png' %}" alt="logo">
+    <div class="footer">
+        <p>version 1.0.4 | © 2024 螺纹连接分析</p>
+    </div>
     </nav>
 </body>
 </html>

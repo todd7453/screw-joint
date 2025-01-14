@@ -25,4 +25,18 @@ urlpatterns = [
     path('force_analysis', views.force_analysis),
     path('shouli1', views.shouli1),
     path('shouli2', views.shouli2),
+    path('shouli3', views.shouli3),
+    path('shouli4', views.shouli4),
+    path('shouli5', views.shouli5),
+    path('shouli6', views.shouli6),
+    path('shouli7', views.shouli7),
+    path('strength_calculation', views.strength_calculation),
+    path('qiangdu1', views.qiangdu1),
+    path('qiangdu2', views.qiangdu2),
+    path('qiangdu3', views.qiangdu3),
+    path('qiangdu4', views.qiangdu4),
+    path('qiangdu5', views.qiangdu5),
+    path('qiangdu6', views.qiangdu6),
+    path('calculator/force_analysis/standard_support/', views.standard_support, name='standard_support'),
+    path('calculator/strength_calculation/standard_support/', views.standard_support, name='standard_support')
 ]

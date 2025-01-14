@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>校核应力</title>
+    {% load static %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #FAF9F6; /* 오프 화이트 색상 */
+            text-align: center; /* 모든 텍스트를 가운데 정렬 */
+            font-family: Arial, simsun; /* 폰트 설정 */
+            overflow-x: hidden; /* 화면 밖으로 나가지 않도록 */
+        }
+        .menu-toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 20; /* 메뉴 바보다 위에 표시되도록 */
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .menu-toggle-btn:hover {
+            background-color: #575757;
+        }
+        .back-btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .back-btn:hover {
+            background-color: #45a049;
+        }
+        /* 왼쪽 메뉴 바 */
+        .sidebar {
+            position: fixed; /* 메뉴 바 고정 */
+            top: 0;
+            left: -200px; /* 기본적으로 메뉴 바는 숨겨져 있음 */
+            height: 100%; /* 전체 높이 */
+            width: 200px; /* 메뉴 바 너비 */
+            background-color: #333;
+            padding-top: 20px;
+            padding-left: 20px;
+            box-sizing: border-box;
+            transition: left 0.3s ease; /* 메뉴 바가 나타나는 애니메이션 */
+            z-index: 50; /* 메뉴 바가 버튼과 페이지 콘텐츠 위에 오도록 설정 */
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 18px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #444;
+        }
+
+        .sidebar a:hover {
+            background-color: #575757;
+        }
+        
+        /* 팝업 계산기 스타일 */
+        .calculator-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            display: none; /* 처음에는 숨겨짐 */
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000; /* 다른 요소들 위에 표시되도록 */
+        }
+        
+        .calculator-popup-header {
+            background-color: #f1f1f1;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move; /* 상단바를 드래그 가능하도록 설정 */
+        }
+        
+        .calculator-popup-header button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        .calculator-body {
+            padding: 10px;
+        }
+        
+        .calculator-body input {
+            width: 90%;
+            height: 40px;
+            font-size: 20px;
+            text-align: right;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .calculator-buttons button {
+            width: 50px;
+            height: 50px;
+            margin: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        .calculator-buttons button:hover {
+            background-color: #45a049;
+        }
+        
+        .open-calculator-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000
+        }
+        
+        .open-calculator-btn:hover {
+            background-color: #575757;
+        }
+        /* 메뉴 칸 */
+        .menu-box {
+            background-color: #444; /* 배경색 */
+            margin-bottom: 10px; /* 각 메뉴 항목 간의 간격 */
+            top: 300px;
+            border-radius: 4px;
+            padding: 20px 10px;
+        }
+        .menu-box a {
+            display: block;
+            color: white;
+            font-size: 18px;
+            text-decoration: none;
+            padding: 15px;
+            background-color: #333;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .menu-box a:hover {
+            background-color: #575757;
+        }
+
+        /* 마우스가 왼쪽 끝에 올려졌을 때 메뉴 바가 보이도록 */
+        .sidebar-wrapper {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50px; /* 마우스를 올릴 영역을 더 넓게 설정 */
+            height: 100%;
+        }
+        .highlight {
+            background-color: #FFEBAA;  /* 노란색 배경 */
+            border: 3px solid #ffeb3b;  /* 오렌지색 테두리 */
+        }
+        .scrollToTopBtn {
+            position: fixed; 
+            bottom: 20px; /* 하단에서 20px 떨어짐 */
+            right: 20px; /* 우측에서 20px 떨어짐 */
+            z-index: 20;
+            padding: 15px 15px;
+            font-size: 16px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+            display: flex; 
+        }
+        .scrollToTopBtn i {
+            font-size: 24px; /* 화살표 크기 */
+        }
+        .scrollToTopBtn:hover {
+            background-color: #333;
+        }
+        /* 메뉴 바가 보이는 상태 */
+        .show-sidebar {
+            left: 0; /* 메뉴 바가 보이도록 왼쪽 위치를 0으로 설정 */
+        }
+        /* 페이지 콘텐츠 */
+        .container {
+            position: absolute;
+            top: 100px; /* 입력 칸의 수직 위치를 이미지와 맞추기 위해 조정 */
+            left: 20px;  /* 입력 칸의 수평 위치를 조정 */
+            width: 98%; /* 입력 칸의 너비 */
+            flex-direction: column;
+            gap: 15px; /* 입력 필드 간의 간격 */
+            align-items: flex-start;
+        }
+        .calculator {
+            flex: 2;
+            display: flex;
+            border: 2px solid #ccc; /* 테두리 */
+            border-radius: 10px; /* 둥근 테두리 */
+            padding: 20px;
+            background-color: white;
+            margin-bottom: 20px; /* 기본 간격 */
+            margin-right: 10px; /* 오른쪽 간격 */
+            display: flex;
+            justify-content: flex-start;
+            gap: 15px;
+            width: 96%;
+            z-index: 1
+        }
+        .calculator2 {
+            flex-direction: column;  
+            border: 2px solid #ccc; /* 테두리 */
+            border-radius: 10px; /* 둥근 테두리 */
+            padding: 20px;
+            background-color: white;
+            margin-bottom: 20px; /* 기본 간격 */
+            margin-right: 10px; /* 오른쪽 간격 */
+            display: flex;
+            gap: 15px;
+            width: 96%;
+            z-index: 1
+        }
+        .calculator3 {
+            display: flex;
+            padding: 20px;
+            background-color: white;
+            margin-bottom: 0px; /* 기본 간격 */
+            margin-right: 0px; /* 오른쪽 간격 */
+            gap: 10px;
+            width: 96%;
+            z-index: 1
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 60px;
+        }
+        .calculator h2 {
+            font-size: 18px;
+            margin-bottom: 40px;
+            margin-right: 0px;
+            display: flex;
+            align-items: center;
+            width: 60%;
+        }
+        .calculator h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            width: 100%;
+        }
+        .calculator h2 button.toggle-btn {
+            font-size: 18px;
+            padding: 5px 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .calculator h2 button.toggle-btn:hover {
+            background-color: #F1F1F4;
+        }
+        .calculator-content {
+            display: none; /* Default: no show content */
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .calculator-content1 {
+            display: block; /* Default: show content */
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .calculator .image-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .calculator .image-公式 {
+            display: block;
+        }
+        .calculator img {
+            max-width: 100%; /* Make sure image fits inside container */
+            height: auto;
+            border-radius: 10px;
+        }
+        .input {
+            width: 100px%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .input input {
+            width: 100%;
+            max-width: 100px; /* Limit the max width of inputs */
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        button[type="submit"] {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button[type="submit1"] {
+            padding: 10px 20px;
+            background-color:rgb(103, 184, 10);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .result {          
+            margin-top: 15px; 
+            flex-direction: column;  
+            font-size: 18px;
+            border: 2px solid #ccc; /* 테두리 */
+            border-radius: 10px; /* 둥근 테두리 */
+            padding: 20px;
+            background-color: white;
+            display: flex;
+            z-index: 2
+        }
+        button[type="chaxun"] {
+            padding: 5px 10px;
+            background-color: #FFEB66;
+            color: black;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #F1F1F4; /* 버튼 호버 시 색상 변경 */
+        }
+        .session-button {
+            padding: 5px 10px;
+            background-color: #FFEB66;
+            color: black;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .session-button:hover {
+            background-color:rgb(192, 179, 91);
+        }
+        .alert {
+            font-size: 24px;
+            color: red; /* 경고 메시지 색상 */
+            margin-top: 10px; /* 위쪽 여백 */
+            position: fixed;
+            top: 450px; /* 상단에서 20px 떨어짐 */
+            left: 50%; /* 화면의 50% 지점에서 시작 */
+            transform: translateX(-50%); /* 정확히 화면 중앙에 배치되도록 이동 */
+            padding: 20px 20px;
+            border: none;
+            border-radius: 5px;
+            z-index: 2;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .input-group input {
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100px;
+        }
+        .input-group button {
+            padding: 5px 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .input-group button:hover {
+            background-color: #0056b3;
+        }
+        .toggle-btn{
+            padding: 6px 6px;
+            background-color: #458;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .toggle-btn:hover {
+            background-color: #109;
+        }
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            width: 300px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .popup .header {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .popup .close-btn {
+            cursor: pointer;
+            font-size: 20px;
+            color: #f44336;
+            border: none;
+            background: none;
+        }
+
+        .popup select, .popup input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .popup button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
+        .popup button:hover {
+            background-color: #45a049;
+        }
+
+        .popup-result {
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+    </style>
+</head>
+<body>
+    {% if messages %}
+    <div class="alert">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+        <!-- 메뉴 열기/닫기 버튼 -->
+    <button class="menu-toggle-btn" onclick="toggleSidebar()">MENU</button>
+    <button id="openCalculatorBtn" class="open-calculator-btn" onclick="openCalculator()">打开计算机</button>
+
+    <div class="sidebar-wrapper"></div> <!-- 마우스가 올려졌을 때 메뉴 바 표시 -->
+
+    <!-- 왼쪽 메뉴 바 -->
+    <div class="sidebar" id="sidebar">
+        <div class="menu-box">
+            <a href="{% url 'home' %}">Home</a>
+            <a href="{% url 'force_analysis' %}">受力分析</a>
+            <a href="{% url 'strength_calculation' %}">校核应力</a>
+            <a href="{% url 'shape_material_analysis' %}">形态及设计分析</a>
+            <a href="{% url 'thread_parameter_definition' %}">螺纹参数定义</a>
+            <a href="{% url 'standard_support' %}">标准化支持</a>
+        </div>
+    </div>
+    <button class="scrollToTopBtn" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button> 
+        
+    <h1>校核应力</h1>
+
+    <div class="calculator"> 
+        <h2>
+            2. 只受预紧力F'的紧螺栓连接
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/应力公式2.png' %}" alt="응력공식 2">
+        </div>
+        </h3>
+        <div class="calculator-content1">
+            <div class="image-container">
+                <img src="{% static 'calculator/应力2.png' %}" alt="응력이미지 2">
+            </div>
+            <form action="{% url 'qiangdu2'%}" method="POST">
+                {% csrf_token %}
+                <div class="input">
+                    <div>
+                        <label for="F">螺栓所受预紧力:  {{ F }} N</label>
+                        <p> </p>
+                    </div>
+                    <div>
+                        <label for="d1">螺纹小径: {{ d1 }} mm</label>  
+                        <p> </p>
+                    </div>
+                    <div>
+                        <label for="σ_s">螺栓材料屈服强度:  {{ σ_s }} MPa</label> 
+                        <p> </p>
+                    </div>
+                    <div>
+                        <label for="S_s">安全系数: {{ S_s }}</label>  
+                        <p> </p>
+                    </div>
+                    <div>  
+                        <p> <img src="{% static 'calculator/qiangdu2_1.png' %}" alt="응력공식 2">值为: {{ qiangdu2_1|floatformat:3 }} </p>
+                        <p> <img src="{% static 'calculator/qiangdu2_2.png' %}" alt="응력공식 2">值为: {{ qiangdu2_2|floatformat:3 }} </p>
+                        <p>{{ result2 }}</p>
+                    </div>
+                    <div class="alert" id="alert-message"></div>
+                </div>
+            </form>
+            <div class="calculator-content1">
+                <form action="{% url 'qiangdu2'%}" method="POST">
+                    {% csrf_token %}
+                    <div class="input">
+                        <div>
+                            <label for="F">螺栓所受预紧力:</label>
+                            <input type="number" name="F" placeholder="F' (N)" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="d1">螺纹小径:</label>  <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session1'">查询</button>
+                            <input type="d1" name="d1" placeholder="d1 (mm)" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="σ_s">螺栓材料屈服强度:</label>  <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session4'">查询</button>
+                            <input type="σ_s" name="σ_s" placeholder="σ_s (MPa)" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="S_s">安全系数:</label>  <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session7'">查询</button>
+                            <input type="S_s" name="S_s" placeholder="S_s" required step="0.01">
+                        </div>
+                        <div>  
+                            <p> </p>
+                            <button type="submit">计算d1范围</button>
+                        </div>
+                        <div class="alert" id="alert-message"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="calculator"> 
+        <h2>
+            1. 受轴向载荷的松螺栓连接设计及校核 <br>（*不需要预紧*）
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/应力公式1.png' %}" alt="응력공식 1">
+        </div>
+        </h3>
+        <div class="calculator-content1">
+            <div class="image-container">
+                <img src="{% static 'calculator/应力1.png' %}" alt="응력이미지 1">
+            </div>
+            <form action="{% url 'qiangdu1'%}" method="POST">
+                {% csrf_token %}
+                <div class="input">
+                    <div>
+                        <label for="F">轴向载荷:  {{ F }} N</label>
+                        <p></p>
+                    </div>
+                    <div>
+                        <label for="d1">螺纹小径:  {{ d1 }} mm</label> 
+                        <p></p>
+                    </div>
+                    <div>
+                        <label for="σ_s">螺栓材料屈服强度:  {{ σ_s }} MPa</label> 
+                        <p></p> 
+                    </div>
+                    <div>  
+                        <p> <img src="{% static 'calculator/qiangdu1.png' %}" alt="응력공식 1">值为: {{ qiangdu1|floatformat:3 }} </p>
+                        <p>{{ result1 }}</p>                        
+                    </div>
+                </div>
+            </form>
+            <div class="calculator-content1">
+                <form action="{% url 'qiangdu1'%}" method="POST">
+                    {% csrf_token %}
+                    <div class="input">
+                        <div>
+                            <label for="F">轴向载荷:</label>
+                            <input type="number" name="F" placeholder="F (N)" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="d1">螺纹小径:</label>  <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session1'">查询</button>
+                            <input type="d1" name="d1" placeholder="d1 (mm)" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="σ_s">螺栓材料屈服强度:</label>  <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session4'">查询</button>
+                            <input type="σ_s" name="σ_s" placeholder="σ_s (MPa)" required step="0.01">
+                        </div>
+                        <div>  
+                            <p> </p>
+                            <button type="submit">计算d1范围</button>
+                        </div>
+                        <div class="alert" id="alert-message"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="calculator2"> 
+        <h2>
+            3. 被连接件刚度计算
+        </h2>
+        <div class="calculator3"> 
+            <h3>
+                <br><br><br><br><br><br>螺<br>栓<br>连<br>接    
+            </h3>
+            <div class="calculator"> 
+                <div class="calculator-content1">
+                    <div class="image-container">
+                        <img src="{% static 'calculator/刚度1.png' %}" alt="刚度1">
+                    </div>
+                    <div class="calculator-content">
+                        <div class="input">
+                            <div>
+                                <label for="EF1">E<sub>F</sub> :</label> 
+                                <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session12'">查询</button>
+                                <input type="number" id="EF1" name="EF1" placeholder="E_F (GPa)" required step="0.01">
+                            </div>
+                            <p>
+                            <div>
+                                <label for="L1">L :</label>
+                                <input type="number" id="L1" name="L1" placeholder="L (mm)" required step="0.01">
+                            </div>
+                            <p>
+                            <div>
+                                <label for="D1">D=d<sub>w</sub> :</label> 
+                                <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session13'">查询</button>
+                                <input type="number" id="D1" name="D1" placeholder="D (mm)" required step="0.01">
+                            </div>
+                            <p>
+                            <div>
+                                <label for="D01">D<sub>0</sub> :</label> 
+                                <input type="number" id="D01" name="D01" placeholder="D0 (mm)" required step="0.01">
+                            </div>
+                            <p>
+                            <div>
+                                <button type="submit" onclick="gangdu1()">计算 C<sub>F</sub></button>
+                            </div>
+                            <div class="result" id="result1"></div>
+                            <p>
+                        </div>
+                    </div>    
+                    <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+                </div>
+            </div>
+            <div class="calculator"> 
+                <div class="calculator-content1">
+                    <div class="image-container">
+                        <img src="{% static 'calculator/刚度2.png' %}" alt="刚度2">
+                    </div>
+                    <div class="calculator-content">
+                        <div class="input">
+                            <div>
+                                <label for="EF2">E<sub>F</sub> :</label> 
+                                <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session12'">查询</button>
+                                <input type="number" id="EF2" name="EF2" placeholder="E_F (GPa)" required step="0.01">
+                            </div>
+                            <p>
+                            <div>
+                                <label for="L2">L :</label>
+                                <input type="number" id="L2" name="L2" placeholder="L (mm)" required step="0.01">
+                            </div>
+                            <p>
+                            <div>
+                                <label for="D2">D :</label> 
+                                <input type="number" id="D2" name="D2" placeholder="D (mm)" required step="0.01">
+                            </div>
+                            <p>
+                            <div>
+                                <label for="dw2">d<sub>w</sub> :</label> 
+                                <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session13'">查询</button>
+                                <input type="number" id="dw2" name="dw2" placeholder="dw (mm)" required step="0.01">
+                            </div>
+                            <p>
+                            <div>
+                                <label for="D02">D<sub>0</sub> :</label> 
+                                <input type="number" id="D02" name="D02" placeholder="D0 (mm)" required step="0.01">
+                            </div>
+                            <p>
+                            <div>
+                                <button type="submit" onclick="gangdu2()">计算 C<sub>F</sub></button>
+                            </div>
+                            <div class="result" id="result2"></div>
+                            <p>
+                        </div>        
+                    </div>
+                    <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+                </div>
+            </div>
+            <div class="calculator"> 
+                <div class="calculator-content1">
+                    <div class="image-container">
+                        <img src="{% static 'calculator/刚度3.png' %}" alt="刚度3">
+                    </div>
+                    <div class="calculator-content">
+                        <div class="input">
+                        <div>
+                            <label for="EF3">E<sub>F</sub> :</label> 
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session12'">查询</button>
+                            <input type="number" id="EF3" name="EF3" placeholder="E_F (GPa)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="L3">L :</label>
+                            <input type="number" id="L3" name="L3" placeholder="L (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="dw3">d<sub>w</sub> :</label> 
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session13'">查询</button>
+                            <input type="number" id="dw3" name="dw3" placeholder="dw (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="D03">D<sub>0</sub> :</label> 
+                            <input type="number" id="D03" name="D03" placeholder="D0 (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <button type="submit" onclick="gangdu3()">计算 C<sub>F</sub></button>
+                        </div>
+                        <div class="result" id="result3"></div>
+                        <p>
+                        </div>
+                    </div>
+                    <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+                </div>
+            </div>
+        </div>
+        <div class="calculator3"> 
+            <h3>
+                <br><br><br><br><br>螺<br>柱<br>及<br>螺<br>钉<br>连<br>接    
+            </h3>
+            <div class="calculator"> 
+                <div class="calculator-content1">
+                    <div class="image-container">
+                        <img src="{% static 'calculator/刚度4.png' %}" alt="刚度4">
+                    </div>
+                </div>
+            </div>
+            <div class="calculator"> 
+                <div class="calculator-content1">
+                    <div class="image-container">
+                        <img src="{% static 'calculator/刚度5.png' %}" alt="刚度5">
+                    </div>
+                    <div class="calculator-content">
+                        <div class="input">
+                        <div>
+                            <label for="EF5">E<sub>F</sub> :</label> 
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session12'">查询</button>
+                            <input type="number" id="EF5" name="EF5" placeholder="E_F (GPa)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="L5">L :</label>
+                            <input type="number" id="L5" name="L5" placeholder="L (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="D5">D :</label> 
+                            <input type="number" id="D5" name="D5" placeholder="D (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="dw5">d<sub>w</sub> :</label> 
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session13'">查询</button>
+                            <input type="number" id="dw5" name="dw5" placeholder="dw (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="D05">D<sub>0</sub> :</label> 
+                            <input type="number" id="D05" name="D05" placeholder="D0 (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <button type="submit" onclick="gangdu5()">计算 C<sub>F</sub></button>
+                        </div>
+                        <div class="result" id="result5"></div>
+                        <p>
+                        </div>
+                    </div>
+                    <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+                </div>
+            </div>
+            <div class="calculator"> 
+                <div class="calculator-content1">
+                    <div class="image-container">
+                        <img src="{% static 'calculator/刚度6.png' %}" alt="刚度6">
+                    </div>
+                    <div class="calculator-content">
+                        <div class="input">
+                        <div>
+                            <label for="EF6">E<sub>F</sub> :</label> 
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session12'">查询</button>
+                            <input type="number" id="EF6" name="EF6" placeholder="E_F (GPa)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="L6">L :</label>
+                            <input type="number" id="L6" name="L6" placeholder="L (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="D6">D :</label> 
+                            <input type="number" id="D6" name="D6" placeholder="D (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="dw6">d<sub>w</sub> :</label> 
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session13'">查询</button>
+                            <input type="number" id="dw6" name="dw6" placeholder="dw (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <label for="D06">D<sub>0</sub> :</label> 
+                            <input type="number" id="D06" name="D06" placeholder="D0 (mm)" required step="0.01">
+                        </div>
+                        <p>
+                        <div>
+                            <button type="submit" onclick="gangdu6()">计算 C<sub>F</sub></button>
+                        </div>
+                        <div class="result" id="result6"></div>
+                        <p>
+                        </div>
+                    </div>
+                    <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="calculator"> 
+        <h2>
+            4. 计算许用应力幅
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/应力公式4-1.png' %}" alt="응력공식 4-1">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <div class="input">
+                <form action="{% url 'qiangdu3'%}" method="POST">
+                    {% csrf_token %}
+                        <div>
+                            <label for="ε">尺寸因数:</label>
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session9'">查询</button>
+                            <input type="number" name="ε" placeholder="ε" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="Kt">螺纹制造工艺因数:</label>
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session9'">查询</button>
+                            <input type="number" name="Kt" placeholder="Kt" required step="0.01">
+                        </div>  
+                        <div>
+                            <label for="Ku">受力不均匀因数:</label> 
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session9'">查询</button>
+                            <input type="number" name="Ku" placeholder="Ku" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="σ1t">试件的疲劳极限:</label> 
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session4'">查询</button>
+                            <input type="number" name="σ1t" placeholder="σ-1t (MPa)" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="Kσ">缺口应力集中因数:</label>
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session9'">查询</button> 
+                            <input type="number" name="Kσ" placeholder="Kσ" required step="0.01">
+                        </div>     
+                        <div>
+                            <label for="Sa">安全系数:</label> 
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session9'">查询</button>
+                            <input type="number" name="Sa" placeholder="Sa" required step="0.01">
+                        </div>                 
+                        <div>  
+                            <p> </p>
+                            <button type="submit">校核许用应力幅</button>
+                        </div>
+                        <div class="alert" id="alert-message"></div>
+                </form>
+            </div>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+
+    <div class="calculator"> 
+        <h2>
+            5. 校核应力幅
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/应力公式4-2.png' %}" alt="응력공식 4-2">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <div class="input">
+                <form action="{% url 'qiangdu4'%}" method="POST">
+                    {% csrf_token %}
+                        <div>
+                            <label for="σap">许用应力幅:</label>
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session9'">查询</button>
+                            <input type="number" name="σap" placeholder="σ_ap" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="F">所加轴向载荷:</label>
+                            <input type="number" name="F" placeholder="F (N)" required step="0.01">
+                        </div>  
+                        <div>
+                            <label for="d1">螺栓工程直径:</label>
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session13'">查询</button>
+                            <input type="number" name="d1" placeholder="d1 (mm)" required step="0.01">
+                        </div>  
+                        <div>
+                            <label for="CL">连接件刚度:</label> 
+                            <input type="number" name="CL" placeholder="C_L" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="CF">被连接件刚度:</label> 
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session5'">查询</button>
+                            <input type="number" name="CF" placeholder="C_F" required step="0.01">
+                        </div>            
+                        <div>  
+                            <p> </p>
+                            <button type="submit">校核应力幅</button>
+                        </div>
+                        <div class="alert" id="alert-message"></div>
+                </form>
+            </div>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+
+    <div class="calculator"> 
+        <h2>
+            6. 校核螺栓切应力
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/应力公式6.png' %}" alt="응력공식 6">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <div class="input">
+                <form action="{% url 'qiangdu5'%}" method="POST">
+                    {% csrf_token %}
+                        <div>
+                            <label for="zaihe">载荷种类:</label>
+                            <select id="zaihe" name="zaihe">
+                                <option value="jingzaihe">静载荷</option>
+                                <option value="bianzaihe">变载荷</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="Fs">螺栓组所受横向外力:</label>
+                            <input type="number" name="Fs" placeholder="F_s (N)" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="m">铰制孔螺栓受剪面数:</label>
+                            <input type="number" name="m" placeholder="m (个)" required min="1">
+                        </div>  
+                        <div>
+                            <label for="d0">铰制孔螺栓受剪处直径:</label>
+                            <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session13'">查询</button>
+                            <input type="number" name="d0" placeholder="d0 (mm)" required step="0.01">
+                        </div>  
+                        <div>
+                            <label for="σ_s">螺栓材料屈服强度:</label>  <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session4'">查询</button>
+                            <input type="σ_s" name="σ_s" placeholder="σ_s (MPa)" required step="0.01">
+                        </div>
+                        <div>  
+                            <p> </p>
+                            <button type="submit">校核切应力</button>
+                        </div>
+                        <div class="alert" id="alert-message"></div>
+                </form>
+            </div>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+
+    <div class="calculator"> 
+        <h2>
+            7. 校核挤压应力
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/应力公式7.png' %}" alt="응력공식 7">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <div class="input">
+                <form action="{% url 'qiangdu6'%}" method="POST">
+                    {% csrf_token %}
+                        <div>
+                            <label for="jinshu">金属种类:</label>
+                            <select id="jinshu" name="jinshu">
+                                <option value="gang">钢</option>
+                                <option value="zhutie">铸铁</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="Fs">螺栓组所受横向外力:</label>
+                            <input type="number" name="Fs" placeholder="F_s (N)" required step="0.01">
+                        </div>
+                        <div>
+                            <label for="d0">铰制孔螺栓受剪处直径:</label>
+                            <input type="number" name="d0" placeholder="d0 (mm)" required step="0.01">
+                        </div>  
+                        <div>
+                            <label for="δ">受挤压的高度:</label>
+                            <input type="number" name="δ" placeholder="δ (mm)" required step="0.01">
+                        </div>  
+                        <div>
+                            <label for="σ_s">螺栓材料屈服强度:</label>  <button class="session-button" onclick="window.location.href='/calculator/strength_calculation/standard_support/#session4'">查询</button>
+                            <input type="σ_s" name="σ_s" placeholder="σ_s (MPa)" required step="0.01">
+                        </div>
+                        <div>  
+                            <p> </p>
+                            <button type="submit">校核挤压应力</button>
+                        </div>
+                        <div class="alert" id="alert-message"></div>
+                </form>
+            </div>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+
+    <div id="calculatorPopup" class="calculator-popup">
+        <div class="calculator-popup-header" id="dragHeader">
+            <span>计算机</span>
+            <button onclick="closeCalculator()">X</button>
+        </div>
+        <div class="calculator-body">
+            <input type="text" id="calcDisplay" disabled placeholder="0">
+            <div class="calculator-buttons">
+                <button onclick="clearDisplay()">AC</button>
+                <button onclick="clearLast('C')">C</button>
+                <button onclick="appendValue('/')">÷</button>
+                <button onclick="appendValue('*')">x</button>
+                <button onclick="appendValue('7')">7</button>
+                <button onclick="appendValue('8')">8</button>
+                <button onclick="appendValue('9')">9</button>
+                <button onclick="appendValue('-')">-</button>
+                <button onclick="appendValue('4')">4</button>
+                <button onclick="appendValue('5')">5</button>
+                <button onclick="appendValue('6')">6</button>
+                <button onclick="appendValue('+')">+</button>
+                <button onclick="appendValue('1')">1</button>
+                <button onclick="appendValue('2')">2</button>
+                <button onclick="appendValue('3')">3</button>
+                <button onclick="calculateResult()">=</button>
+                <button onclick="appendValue('0')">0</button>
+                <button onclick="appendValue('.')">.</button>
+                <button onclick="appendValue('(')">(</button>
+                <button onclick="appendValue(')')">)</button>
+            </div>
+        </div>
+    </div>        
+    
+    <script>
+        let sidear = document.getElementById('sidebar'); // 메뉴 바
+        let sidebarWrapper = document.querySelector('.sidebar-wrapper'); // 메뉴 바 외부 영역
+
+        // 메뉴 바 열기/닫기
+        function toggleSidebar() {
+            if (sidebar.style.left === '0px') {
+                sidebar.style.left = '-200px'; // 메뉴 바 닫기
+            } else {
+                sidebar.style.left = '0'; // 메뉴 바 열기
+            }
+        }
+
+        // 메뉴 바 바깥을 클릭하면 메뉴 닫기
+        document.addEventListener('click', function(event) {
+            // 메뉴 바와 바깥 영역을 제외한 클릭은 메뉴 닫기
+            if (!sidebar.contains(event.target) && !sidebarWrapper.contains(event.target) && !event.target.classList.contains('menu-toggle-btn')) {
+                sidebar.style.left = '-200px'; // 메뉴 바 닫기
+            }
+        });
+
+    </script>
+    <script>
+        window.onscroll = function() {
+            const button = document.getElementById("scrollToTopBtn");
+            if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+                button.style.display = "block"; // 버튼 보이기
+            } else {
+                button.style.display = "none"; // 버튼 숨기기
+            }
+        };
+
+        // 맨 위로 부드럽게 스크롤하는 함수
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth" // 부드럽게 스크롤
+            });
+        const allSessions = document.querySelectorAll('section');
+        allSessions.forEach((session) => {
+            session.classList.remove('highlight');
+        });
+
+        // 해당 세션에 하이라이트 추가
+        session.classList.add('highlight');
+
+        // 하이라이트를 일정 시간 후 자동으로 제거
+        setTimeout(() => {
+            session.classList.remove('highlight');
+        }, 1000);  // 3초 후에 하이라이트 제거
+        }
+    </script>
+    <script>
+            let rIndex4 = 2; // Start adding r values from r2 for shouli4
+            let rIndex5 = 2; // Start adding r values from r2 for shouli5
+            
+            let lastRIndex4 = 1; // Track the last added input field index for shouli4
+            let lastRIndex5 = 1; // Track the last added input field index for shouli5
+            
+            // Function to add a new input field for r values in shouli4
+            function addRValueShouli4() {
+                const container = document.getElementById('additional-r-values-shouli4');
+                const inputGroup = document.createElement('div');
+                inputGroup.classList.add('input-group');
+                inputGroup.id = 'r' + rIndex4 + '-group-shouli4';
+            
+                // Create r input field for shouli4
+                const inputField = document.createElement('input');
+                inputField.type = 'number';
+                inputField.name = 'r' + rIndex4; // name for r values in shouli4
+                inputField.placeholder = 'r' + rIndex4 + ' (mm)';
+                inputField.required = true;
+                inputField.step = '0.01';
+            
+                // Create remove button for shouli4
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.textContent = '-';
+                removeButton.onclick = function() {
+                    removeRValueShouli4();
+                };
+            
+                // Append the input and button to the input group
+                inputGroup.appendChild(inputField);
+                inputGroup.appendChild(removeButton);
+                container.appendChild(inputGroup);
+            
+                lastRIndex4 = rIndex4; // Set the last added input index for shouli4
+                rIndex4++; // Increment index for the next input field in shouli4
+            }
+            
+            // Function to remove a specific r value input field for shouli4 (remove the last added one)
+            function removeRValueShouli4() {
+                const group = document.getElementById('r' + lastRIndex4 + '-group-shouli4');
+                if (group) {
+                    group.remove();
+                }
+                lastRIndex4--; // Update lastRIndex for shouli4
+            }
+            
+            // Function to add a new input field for r values in shouli5
+            function addRValueShouli5() {
+                const container = document.getElementById('additional-r-values-shouli5');
+                const inputGroup = document.createElement('div');
+                inputGroup.classList.add('input-group');
+                inputGroup.id = 'r' + rIndex5 + '-group-shouli5';
+            
+                // Create r input field for shouli5
+                const inputField = document.createElement('input');
+                inputField.type = 'number';
+                inputField.name = 'r' + rIndex5; // name for r values in shouli5
+                inputField.placeholder = 'r' + rIndex5 + ' (mm)';
+                inputField.required = true;
+                inputField.step = '0.01';
+            
+                // Create remove button for shouli5
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.textContent = '-';
+                removeButton.onclick = function() {
+                    removeRValueShouli5();
+                };
+            
+                // Append the input and button to the input group
+                inputGroup.appendChild(inputField);
+                inputGroup.appendChild(removeButton);
+                container.appendChild(inputGroup);
+            
+                lastRIndex5 = rIndex5; // Set the last added input index for shouli5
+                rIndex5++; // Increment index for the next input field in shouli5
+            }
+            
+            // Function to remove a specific r value input field for shouli5 (remove the last added one)
+            function removeRValueShouli5() {
+                const group = document.getElementById('r' + lastRIndex5 + '-group-shouli5');
+                if (group) {
+                    group.remove();
+                }
+                lastRIndex5--; // Update lastRIndex for shouli5
+            }
+    </script>
+    <script>
+            // Toggle visibility function for each calculator
+            function toggleCalculator(button) {
+                const calculatorContent = button.closest('.calculator').querySelector('.calculator-content');
+                const currentText = button.textContent;
+            
+                if (currentText === '+') {
+                    calculatorContent.style.display = 'block'; // Hide content
+                    button.textContent = '-'; // Change to plus sign
+                } else {
+                    calculatorContent.style.display = 'none'; // Show content
+                    button.textContent = '+'; // Change to minus sign
+                }
+            }
+    </script>
+    <script>
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            // 팝업 계산기 열기
+            function openCalculator() {
+                document.getElementById('calculatorPopup').style.display = 'block';
+                document.getElementById('openCalculatorBtn').style.display = 'none'; // 버튼 숨김
+            }
+            
+            // 팝업 계산기 닫기
+            function closeCalculator() {
+                document.getElementById('calculatorPopup').style.display = 'none';
+                document.getElementById('openCalculatorBtn').style.display = 'block'; // 버튼 다시 보이게
+            }
+            
+            // 계산기 화면에 값 추가
+            function appendValue(value) {
+                const display = document.getElementById('calcDisplay');
+                if (display.value === '0' && value !== '.') {
+                    display.value = value; // 0으로 시작하지 않게 처리
+                } else {
+                    display.value += value;
+                }
+            }
+            
+            // 계산기 화면 초기화
+            function clearDisplay() {
+                currentInput = "";
+                document.getElementById('calcDisplay').value = '0';
+            }
+
+            function clearLast() {
+                const display = document.getElementById('calcDisplay');
+                display.value = display.value.slice(0, -1);  // 마지막 문자 삭제
+            }
+            
+            // 계산 결과 계산
+            function calculateResult() {
+                const display = document.getElementById('calcDisplay');
+            
+                try {
+                    // 수학 함수 처리: 수식에서 "sin", "cos", "tan", "log", "ln", "√" 등을 Math 객체의 함수로 변환
+                    let processedInput = display.value
+                        .replace(/sin/g, 'Math.sin')
+                        .replace(/cos/g, 'Math.cos')
+                        .replace(/tan/g, 'Math.tan')
+                        .replace(/log/g, 'Math.log')
+                        .replace(/ln/g, 'Math.log') // ln은 log로 처리
+                        .replace(/√/g, 'Math.sqrt') // 제곱근
+                        .replace(/π/g, 'Math.PI')
+                        .replace(/e/g, 'Math.E')
+                        .replace(/x!/g, 'factorial'); // 팩토리얼 처리 추가
+                    // 변환된 수식 로그 출력 (디버깅용)
+                    console.log("Processed input: " + processedInput);
+
+                    // 수식을 처리 (eval 사용)
+                    let result = eval(processedInput);
+
+                    // 계산된 결과가 'undefined'인지 확인
+                    if (result === undefined) {
+                        display.value = "Error"; // undefined 처리
+                    } else {
+                        display.value = result; // 정상 결과 표시
+                    }
+                } catch (e) {
+                    // 오류가 발생하면 "Error" 표시
+                    display.value = "Error";
+                }
+            }
+            
+            // 팩토리얼 계산 함수
+            function factorial(n) {
+                if (n === 0 || n === 1) return 1;
+                let f = 1;
+                for (let i = 2; i <= n; i++) {
+                    f *= i;
+                }
+                return f;
+            }
+            
+            // 드래그 기능
+            const dragHeader = document.getElementById('dragHeader');
+            
+            dragHeader.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - document.getElementById('calculatorPopup').offsetLeft;
+                offsetY = e.clientY - document.getElementById('calculatorPopup').offsetTop;
+                
+                // 마우스 이동 중 위치 업데이트
+                document.addEventListener('mousemove', dragMove);
+                document.addEventListener('mouseup', stopDragging);
+            });
+            
+            function dragMove(e) {
+                if (isDragging) {
+                    const popup = document.getElementById('calculatorPopup');
+                    popup.style.left = (e.clientX - offsetX) + 'px';
+                    popup.style.top = (e.clientY - offsetY) + 'px';
+                }
+            }
+            
+            function stopDragging() {
+                isDragging = false;
+                document.removeEventListener('mousemove', dragMove);
+                document.removeEventListener('mouseup', stopDragging);
+            }
+    </script>
+    <script> /*gangdu1*/
+        function gangdu1() {
+            // 입력값 가져오기
+            const EF1 = parseFloat(document.getElementById('EF1').value); // E 값 (탄성계수)
+            const L1 = parseFloat(document.getElementById('L1').value); // L 값 (길이)
+            const D1 = parseFloat(document.getElementById('D1').value); // D 값 (외경)
+            const D01 = parseFloat(document.getElementById('D01').value); // D0 값 (내경)
+
+            // 값이 NaN(숫자가 아닌 경우)이면 오류 메시지
+            if (isNaN(EF1) || isNaN(L1) || isNaN(D1) || isNaN(D01)|| L1==0) {
+                document.getElementById('result1').textContent = "请输入正确数";
+                document.getElementById('result1').style.color = "red";  // 오류 메시지를 빨간색으로 표시
+                return;
+            }
+            const result1 = (EF1) / L1 * (Math.PI / 4) * (Math.pow(D1, 2) - Math.pow(D01, 2));
+
+            document.getElementById('result1').textContent = `C_F= ${result1.toFixed(3)} `;
+            document.getElementById('result1').style.color = "green";  // 계산 결과는 초록색으로 표시
+        }
+    </script>
+    <script> /*gangdu2*/
+        function gangdu2() {
+            // 입력값 가져오기
+            const EF2 = parseFloat(document.getElementById('EF2').value); // E 값 (탄성계수)
+            const L2 = parseFloat(document.getElementById('L2').value); // L 값 (길이)
+            const D2 = parseFloat(document.getElementById('D2').value); // D 값 (외경)
+            const D02 = parseFloat(document.getElementById('D02').value); // D0 값 (내경)
+            const dw2 = parseFloat(document.getElementById('dw2').value); 
+
+            // 값이 NaN(숫자가 아닌 경우)이면 오류 메시지
+            if (isNaN(EF2) || isNaN(L2) || isNaN(D2) || isNaN(D02) || isNaN(dw2) || L2==0) {
+                document.getElementById('result2').textContent = "请输入正确数";
+                document.getElementById('result2').style.color = "red";  // 오류 메시지를 빨간색으로 표시
+                return;
+            }
+            const result2 = (EF2) / L2 * (Math.PI / 4) * (Math.pow(D2 + L2 * (1-((Math.pow(3-D2/dw2), 2) / 4))/10, 2) - Math.pow(D02, 2));
+
+            document.getElementById('result2').textContent = `C_F= ${result2.toFixed(3)} `;
+            document.getElementById('result2').style.color = "green";  // 계산 결과는 초록색으로 표시
+        }
+    </script>
+    <script> /*gangdu3*/
+        function gangdu3() {
+            const EF3 = parseFloat(document.getElementById('EF3').value); // E 값 (탄성계수)
+            const L3 = parseFloat(document.getElementById('L3').value); // L 값 (길이)
+            const D03 = parseFloat(document.getElementById('D03').value); // D0 값 (내경)
+            const dw3 = parseFloat(document.getElementById('dw3').value); 
+
+            // 값이 NaN(숫자가 아닌 경우)이면 오류 메시지
+            if (isNaN(EF3) || isNaN(L3) || isNaN(D03) || isNaN(dw3) || L3==0) {
+                document.getElementById('result3').textContent = "请输入正确数";
+                document.getElementById('result3').style.color = "red";  // 오류 메시지를 빨간색으로 표시
+                return;
+            }
+            const result3 = (EF3) / L3 * (Math.PI / 4) * ((Math.pow(dw3 + (L3 / 10), 2)) - (Math.pow(D03 , 2)));
+
+            document.getElementById('result3').textContent = `C_F= ${result3.toFixed(3)} `;
+            document.getElementById('result3').style.color = "green";  // 계산 결과는 초록색으로 표시
+        }
+    </script>
+    <script> /*gangdu5*/
+        function gangdu5() {
+            const EF5 = parseFloat(document.getElementById('EF5').value); // E 값 (탄성계수)
+            const L5 = parseFloat(document.getElementById('L5').value); // L 값 (길이)
+            const D5 = parseFloat(document.getElementById('D5').value); // D0 값 (내경)
+            const D05 = parseFloat(document.getElementById('D05').value); // D0 값 (내경)
+            const dw5 = parseFloat(document.getElementById('dw5').value); 
+
+            // 값이 NaN(숫자가 아닌 경우)이면 오류 메시지
+            if (isNaN(EF5) || isNaN(L5) || isNaN(D5) || isNaN(D05) || isNaN(dw5) || L5==0 ) {
+                document.getElementById('result5').textContent = "请输入正确数";
+                document.getElementById('result5').style.color = "red";  // 오류 메시지를 빨간색으로 표시
+                return;
+            }
+            const result5 = (EF5) / L5 * (Math.PI / 4) * (Math.pow(D5 + 2 * L5 * (1-((Math.pow(3-D5/dw5), 2) / 4))/10, 2) - Math.pow(D05, 2));
+
+            document.getElementById('result5').textContent = `C_F= ${result5.toFixed(3)} `;
+            document.getElementById('result5').style.color = "green";  // 계산 결과는 초록색으로 표시
+        }
+    </script>
+    <script> /*gangdu6*/
+        function gangdu6() {
+            const EF6 = parseFloat(document.getElementById('EF6').value); // E 값 (탄성계수)
+            const L6 = parseFloat(document.getElementById('L6').value); // L 값 (길이)
+            const D06 = parseFloat(document.getElementById('D06').value); // D0 값 (내경)
+            const dw6 = parseFloat(document.getElementById('dw6').value); 
+
+            // 값이 NaN(숫자가 아닌 경우)이면 오류 메시지
+            if (isNaN(EF6) || isNaN(L6) || isNaN(D06) || isNaN(dw6) || L6==0) {
+                document.getElementById('result6').textContent = "请输入正确数";
+                document.getElementById('result6').style.color = "red";  // 오류 메시지를 빨간색으로 표시
+                return;
+            }
+            const result6 = (EF6) / L6 * (Math.PI / 4) * ((Math.pow(dw6 + (L6 / 5), 2)) - (Math.pow(D06 , 2)));
+
+            document.getElementById('result6').textContent = `C_F= ${result6.toFixed(3)} `;
+            document.getElementById('result6').style.color = "green";  // 계산 결과는 초록색으로 표시
+        }
+    </script>
+    <script>
+        // 뒤로 가기 함수
+        function goBack() {
+            window.history.back();  // 이전 페이지로 이동
+        }
+    </script>
+</body>
+</html>

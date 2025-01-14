@@ -1,11 +1,877 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>힘 분석 입력</title>
+    <title>强度分析</title>
+    {% load static %}
+    <style>
+        body {
+            background-color: #FAF9F6; /* 오프 화이트 색상 */
+            text-align: center; /* 모든 텍스트를 가운데 정렬 */
+            font-family: Arial, simhei; /* 폰트 설정 */
+            overflow-x: hidden; /* 화면 밖으로 나가지 않도록 */
+        }
+        .menu-toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 20; /* 메뉴 바보다 위에 표시되도록 */
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .menu-toggle-btn:hover {
+            background-color: #575757;
+        }
+
+        /* 왼쪽 메뉴 바 */
+        .sidebar {
+            position: fixed; /* 메뉴 바 고정 */
+            top: 0;
+            left: -200px; /* 기본적으로 메뉴 바는 숨겨져 있음 */
+            height: 100%; /* 전체 높이 */
+            width: 200px; /* 메뉴 바 너비 */
+            background-color: #333;
+            padding-top: 20px;
+            padding-left: 20px;
+            box-sizing: border-box;
+            transition: left 0.3s ease; /* 메뉴 바가 나타나는 애니메이션 */
+            z-index: 50; /* 메뉴 바가 버튼과 페이지 콘텐츠 위에 오도록 설정 */
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 18px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #444;
+        }
+
+        .sidebar a:hover {
+            background-color: #575757;
+        }
+        
+        /* 팝업 계산기 스타일 */
+        .calculator-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            display: none; /* 처음에는 숨겨짐 */
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000; /* 다른 요소들 위에 표시되도록 */
+        }
+        
+        .calculator-popup-header {
+            background-color: #f1f1f1;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move; /* 상단바를 드래그 가능하도록 설정 */
+        }
+        
+        .calculator-popup-header button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        .calculator-body {
+            padding: 10px;
+        }
+        
+        .calculator-body input {
+            width: 90%;
+            height: 40px;
+            font-size: 20px;
+            text-align: right;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .calculator-buttons button {
+            width: 50px;
+            height: 50px;
+            margin: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        .calculator-buttons button:hover {
+            background-color: #ddd;
+        }
+        
+        .open-calculator-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .open-calculator-btn:hover {
+            background-color: #575757;
+        }
+        /* 메뉴 칸 */
+        .menu-box {
+            background-color: #444; /* 배경색 */
+            margin-bottom: 10px; /* 각 메뉴 항목 간의 간격 */
+            top: 300px;
+            border-radius: 4px;
+            padding: 20px 10px;
+        }
+        .menu-box a {
+            display: block;
+            color: white;
+            font-size: 18px;
+            text-decoration: none;
+            padding: 15px;
+            background-color: #333;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .menu-box a:hover {
+            background-color: #575757;
+        }
+
+        /* 마우스가 왼쪽 끝에 올려졌을 때 메뉴 바가 보이도록 */
+        .sidebar-wrapper {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50px; /* 마우스를 올릴 영역을 더 넓게 설정 */
+            height: 100%;
+        }
+
+        /* 메뉴 바가 보이는 상태 */
+        .show-sidebar {
+            left: 0; /* 메뉴 바가 보이도록 왼쪽 위치를 0으로 설정 */
+        }
+        /* 페이지 콘텐츠 */
+        .container {
+            position: absolute;
+            top: 100px; /* 입력 칸의 수직 위치를 이미지와 맞추기 위해 조정 */
+            left: 20px;  /* 입력 칸의 수평 위치를 조정 */
+            width: 98%; /* 입력 칸의 너비 */
+            flex-direction: column;
+            gap: 15px; /* 입력 필드 간의 간격 */
+            align-items: flex-start;
+        }
+        .calculator {
+            flex: 2;
+            display: flex;
+            border: 2px solid #ccc; /* 테두리 */
+            border-radius: 10px; /* 둥근 테두리 */
+            padding: 20px;
+            background-color: white;
+            margin-bottom: 20px; /* 기본 간격 */
+            margin-right: 10px; /* 오른쪽 간격 */
+            display: flex;
+            justify-content: flex-start;
+            gap: 15px;
+            width: 96%;
+            z-index: 1
+        }
+        h1 {
+            font-size: 34px;
+            margin-bottom: 60px;
+        }
+        .calculator h2 {
+            font-size: 18px;
+            margin-bottom: 40px;
+            margin-right: 0px;
+            display: flex;
+            align-items: center;
+            width: 60%;
+        }
+        .calculator h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            width: 100%;
+        }
+        .calculator h2 button.toggle-btn {
+            font-size: 18px;
+            padding: 5px 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .calculator h2 button.toggle-btn:hover {
+            background-color: #F1F1F4;
+        }
+        .calculator-content {
+            display: none; /* Default: no show content */
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .calculator-content1 {
+            display: block; /* Default: show content */
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .calculator .image-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .calculator .image-公式 {
+            display: block;
+        }
+        .calculator img {
+            max-width: 100%; /* Make sure image fits inside container */
+            height: auto;
+            border-radius: 10px;
+        }
+        .input {
+            width: 100px%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .input input {
+            width: 100%;
+            max-width: 300px; /* Limit the max width of inputs */
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        button[type="submit"] {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button[type="chaxun"] {
+            padding: 5px 10px;
+            background-color: #FFEB66;
+            color: black;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #F1F1F4; /* 버튼 호버 시 색상 변경 */
+        }
+        .alert {
+            color: red; /* 경고 메시지 색상 */
+            margin-top: 10px; /* 위쪽 여백 */
+        }
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .input-group input {
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100px;
+        }
+        .input-group button {
+            padding: 5px 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .input-group button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <h1>힘 분석 입력</h1>
+    {% if messages %}
+    <div class="alert">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
 
+        <!-- 메뉴 열기/닫기 버튼 -->
+        <button class="menu-toggle-btn" onclick="toggleSidebar()">MENU</button>
+
+        <div class="sidebar-wrapper"></div> <!-- 마우스가 올려졌을 때 메뉴 바 표시 -->
+    
+        <!-- 왼쪽 메뉴 바 -->
+        <div class="sidebar" id="sidebar">
+            <div class="menu-box">
+                <a href="{% url 'home' %}">Home</a>
+                <a href="{% url 'strength_calculation' %}">Strength Calculation</a>
+                <a href="{% url 'shape_material_analysis' %}">Shape & Material Analysis</a>
+                <a href="{% url 'thread_parameter_definition' %}">Thread Parameter Definition</a>
+                <a href="{% url 'standard_support' %}">Standard Support</a>
+            </div>
+        </div>
+
+        
+    <h1>受力分析</h1>
+    <div class="calculator"> 1
+        <h2>
+            受轴向载荷的松螺栓连接设计及校核
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/公式8.png' %}" alt="공식 8">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <form action="{% url 'qiangdu1'%}" method="POST">
+                {% csrf_token %}
+                <div class="input">
+                    <div>
+                        <label for="F">轴向载荷:</label>
+                        <input type="number" name="F" placeholder="F (N)" required step="0.01">
+                    </div>
+                    <div>
+                        <label for="σ_s">螺栓材料屈服强度:</label>  <button type="chaxun">查询</button>
+                        <input type="σ_s" name="σ_s" placeholder="σ_s (MPa)" required step="0.01">
+                    </div>
+                    <div>  
+                        <p> </p>
+                        <button type="submit">计算d1范围</button>
+                    </div>
+                    <div class="alert" id="alert-message"></div>
+                </div>
+            </form>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+    
+    <div class="calculator"> 2
+        <h2>
+            承受横向力R的普通螺栓组
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/公式2.png' %}" alt="공식 2">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <div class="image-container">
+                <img src="{% static 'calculator/受力2.png' %}" alt="이미지 2">
+            </div>
+
+            <form action="{% url 'shouli2'%}" method="POST">
+                {% csrf_token %}
+                <div class="input">
+                    <div>
+                        <label for="kf">螺栓组所受轴向外力:</label>
+                        <input type="number" name="kf" placeholder="kf" required step="0.01" min="1.2" max="1.5">
+                    </div>
+                    <div>
+                        <label for="R">螺栓组所受轴向外力:</label>
+                        <input type="number" name="R" placeholder="R" required step="0.01">
+                    </div>
+                    <div>
+                        <label for="μ">连接摩擦副的摩擦因数:</label>  <button type="chaxun">查询</button>
+                        <input type="number" name="μ" placeholder="μ" required step="0.01">
+                    </div>
+                    <div>
+                        <label for="m">摩擦面数量，等于被连接件数量减一:</label>
+                        <input type="number" name="m" placeholder="m" required min="1">
+                    </div>
+                    <div>
+                        <label for="Z1">螺栓组的螺栓个数:</label> 
+                        <input type="number" name="Z1" placeholder="Z" required min="1">
+                    </div>
+                    <div>
+                        <p> </p>
+                        <button type="submit">计算F'</button>
+                    </div>
+                    <div class="alert" id="alert-message"></div>
+                </div>
+            </form>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+
+    <div class="calculator"> 3
+        <h2>
+            承受横向力R的铰制孔螺栓组
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/公式3.png' %}" alt="공식 3">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <div class="image-container">
+                <img src="{% static 'calculator/受力3.png' %}" alt="이미지 3">
+            </div>
+
+            <form action="{% url 'shouli3'%}" method="POST">
+                {% csrf_token %}
+                <div class="input">
+                    <div>
+                        <label for="R">螺栓组所受横向外力:</label>
+                        <input type="number" name="R" placeholder="R (N)" required step="0.01">
+                    </div>
+                    <div>
+                        <label for="Z3">螺栓组的螺栓个数:</label>
+                        <input type="number" name="Z3" placeholder="Z (个)" required min="1">
+                    </div>  
+                    <div>  
+                        <p> </p>
+                        <button type="submit">计算 Fs</button>
+                    </div>
+                    <div class="alert" id="alert-message"></div>
+                </div>
+            </form>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+
+    <div class="calculator"> 4
+        <h2>
+            连接承受旋转力矩T的螺栓组
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/公式4-1.png' %}" alt="공식 4-1">
+            <img src="{% static 'calculator/公式4-2.png' %}" alt="공식 4-2">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <div class="image-container">
+                <img src="{% static 'calculator/受力4.png' %}" alt="이미지 4">
+            </div>
+
+            <form action="{% url 'shouli4'%}" method="POST">
+                {% csrf_token %}
+                <div class="input">
+                    <div>
+                        <label for="kf">螺栓组所受轴向外力:</label>
+                        <input type="number" name="kf" placeholder="kf" required step="0.01" min="1.2" max="1.5">
+                    </div>
+                    <div>
+                        <label for="T">栓组所受旋转力矩:</label>
+                        <input type="number" name="T" placeholder="T (N∙mm)" required min="0.01">
+                    </div>  
+                    <div>
+                        <label for="μ">连接摩擦副的摩擦因数:</label>  <button type="chaxun">查询</button>
+                        <input type="number" name="μ" placeholder="μ" required step="0.01">
+                    </div>
+                    <div class="input-group" id="r1-group">
+                        <label for="r">螺栓中心至低板旋转中心的距离:</label>
+                        <input type="number" name="r1" placeholder="r1 (mm)" required step="0.01">
+                        <button type="button" onclick="addRValueShouli4()">+</button>
+                    </div>
+                    <div id="additional-r-values-shouli4"></div>
+                    <div>  
+                        <p> </p>
+                        <button type="submit">计算 F'</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+
+    <div class="calculator"> 5
+        <h2>
+            承受翻转力矩M的普通螺栓组
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/公式5.png' %}" alt="공식 5">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <div class="image-container">
+                <img src="{% static 'calculator/受力5.png' %}" alt="이미지 5">
+            </div>
+
+            <form action="{% url 'shouli5'%}" method="POST">
+                {% csrf_token %}
+                <div class="input">
+                    <div>
+                        <label for="M">螺栓组所受翻转力矩:</label>
+                        <input type="number" name="M" placeholder="M (N∙mm)" required step="0.01">
+                    </div>  
+                    <div class="input-group" id="r1-group">
+                        <label for="r">螺栓中心至低板旋转中心的距离:</label>
+                        <input type="number" name="r1" placeholder="r1 (mm)" required step="0.01">
+                        <button type="button" onclick="addRValueShouli5()">+</button>
+                    </div>
+                    <div id="additional-r-values-shouli5"></div>
+                    <div>  
+                        <p> </p>
+                        <button type="submit">计算 Fmax</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+    
+    <div class="calculator"> 6
+        <h2>
+            预紧力计算
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/公式6.png' %}" alt="공식 6">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <form action="{% url 'shouli6'%}" method="POST">
+                {% csrf_token %}
+                <div class="input">
+                    <div>
+                        <label for="material">钢材类型:</label>
+                        <select id="material" name="material">
+                            <option value="carbonSteel">碳素钢</option>
+                            <option value="alloySteel">合金钢</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="σ_s">螺栓材料的屈服强度:</label> <button type="chaxun">查询</button>
+                        <input type="number" name="σ_s" placeholder="σ_s (MPa)" required step="0.01">
+                    </div>  
+                    <div>
+                        <label for="d1">外螺纹小径:</label> <button type="chaxun">查询</button>
+                        <input type="number" name="d1" placeholder="d1 (mm)" required step="0.01">
+                    </div>  
+                    <div>
+                        <label for="d2">外螺纹中径:</label> <button type="chaxun">查询</button>
+                        <input type="number" name="d2" placeholder="d2 (mm)" required step="0.01">
+                    </div>  
+                    <div>
+                        <label for="H">螺纹的原始三角形高度:</label>
+                        <input type="number" name="H" placeholder="H (mm)" required step="0.01">
+                    </div>  
+                    <div>  
+                        <p> </p>
+                        <button type="submit">计算 F'</button>
+                    </div>
+                    <div class="alert" id="alert-message"></div>
+                </div>
+            </form>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+
+    <div class="calculator"> 7
+        <h2>
+            拧紧力矩计算
+        </h2>
+        <h3>
+        <label>计算公式:</label>
+        <p>  <p>   
+        <div class="image-公式">
+            <img src="{% static 'calculator/公式7.png' %}" alt="공식 7">
+        </div>
+        </h3>
+        <div class="calculator-content">
+            <div class="image-container">
+                <img src="{% static 'calculator/受力7.png' %}" alt="이미지 7">
+            </div>
+            <form action="{% url 'shouli7'%}" method="POST">
+                {% csrf_token %}
+                <div class="input">
+                    <div>
+                        <label for="K">拧紧力矩系数:</label> <button type="chaxun">查询</button>
+                        <input type="number" name="K" placeholder="K" required step="0.01">
+                    </div>  
+                    <div>
+                        <label for="F'">预紧力:</label>
+                        <input type="number" name="F'" placeholder="F' (N)" required step="0.01">
+                    </div>  
+                    <div>
+                        <label for="d">螺纹公称直径:</label> <button type="chaxun">查询</button>
+                        <input type="number" name="d" placeholder="d (mm)" required step="0.01">
+                    </div>  
+                    <div>  
+                        <p> </p>
+                        <button type="submit">计算 T</button>
+                    </div>
+                    <div class="alert" id="alert-message"></div>
+                </div>
+            </form>
+        </div>
+        <button class="toggle-btn" onclick="toggleCalculator(this)">+</button> <!-- 버튼 추가 -->
+    </div>
+
+    <div id="calculatorPopup" class="calculator-popup">
+        <div class="calculator-popup-header" id="dragHeader">
+            <span>计算机</span>
+            <button onclick="closeCalculator()">X</button>
+        </div>
+        <div class="calculator-body">
+            <input type="text" id="calcDisplay" disabled placeholder="0">
+            <div class="calculator-buttons">
+                <button onclick="clearDisplay()">AC</button>
+                <button onclick="appendValue('%')">%</button>
+                <button onclick="appendValue('/')">÷</button>
+                <button onclick="appendValue('*')">x</button>
+                <button onclick="appendValue('7')">7</button>
+                <button onclick="appendValue('8')">8</button>
+                <button onclick="appendValue('9')">9</button>
+                <button onclick="appendValue('-')">-</button>
+                <button onclick="appendValue('4')">4</button>
+                <button onclick="appendValue('5')">5</button>
+                <button onclick="appendValue('6')">6</button>
+                <button onclick="appendValue('+')">+</button>
+                <button onclick="appendValue('1')">1</button>
+                <button onclick="appendValue('2')">2</button>
+                <button onclick="appendValue('3')">3</button>
+                <button onclick="calculateResult()">=</button>
+                <button onclick="appendValue('0')">0</button>
+                <button onclick="appendValue('.')">.</button>
+                <button onclick="appendValue('(')">(</button>
+                <button onclick="appendValue(')')">)</button>
+            </div>
+        </div>
+    </div>
+
+    <button id="openCalculatorBtn" class="open-calculator-btn" onclick="openCalculator()">打开计算机</button>
+        
+    
+    <script>
+        let sidear = document.getElementById('sidebar'); // 메뉴 바
+        let sidebarWrapper = document.querySelector('.sidebar-wrapper'); // 메뉴 바 외부 영역
+
+        // 메뉴 바 열기/닫기
+        function toggleSidebar() {
+            if (sidebar.style.left === '0px') {
+                sidebar.style.left = '-200px'; // 메뉴 바 닫기
+            } else {
+                sidebar.style.left = '0'; // 메뉴 바 열기
+            }
+        }
+
+        // 메뉴 바 바깥을 클릭하면 메뉴 닫기
+        document.addEventListener('click', function(event) {
+            // 메뉴 바와 바깥 영역을 제외한 클릭은 메뉴 닫기
+            if (!sidebar.contains(event.target) && !sidebarWrapper.contains(event.target) && !event.target.classList.contains('menu-toggle-btn')) {
+                sidebar.style.left = '-200px'; // 메뉴 바 닫기
+            }
+        });
+
+    </script>
+
+    <script>
+            let rIndex4 = 2; // Start adding r values from r2 for shouli4
+            let rIndex5 = 2; // Start adding r values from r2 for shouli5
+            
+            let lastRIndex4 = 1; // Track the last added input field index for shouli4
+            let lastRIndex5 = 1; // Track the last added input field index for shouli5
+            
+            // Function to add a new input field for r values in shouli4
+            function addRValueShouli4() {
+                const container = document.getElementById('additional-r-values-shouli4');
+                const inputGroup = document.createElement('div');
+                inputGroup.classList.add('input-group');
+                inputGroup.id = 'r' + rIndex4 + '-group-shouli4';
+            
+                // Create r input field for shouli4
+                const inputField = document.createElement('input');
+                inputField.type = 'number';
+                inputField.name = 'r' + rIndex4; // name for r values in shouli4
+                inputField.placeholder = 'r' + rIndex4 + ' (mm)';
+                inputField.required = true;
+                inputField.step = '0.01';
+            
+                // Create remove button for shouli4
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.textContent = '-';
+                removeButton.onclick = function() {
+                    removeRValueShouli4();
+                };
+            
+                // Append the input and button to the input group
+                inputGroup.appendChild(inputField);
+                inputGroup.appendChild(removeButton);
+                container.appendChild(inputGroup);
+            
+                lastRIndex4 = rIndex4; // Set the last added input index for shouli4
+                rIndex4++; // Increment index for the next input field in shouli4
+            }
+            
+            // Function to remove a specific r value input field for shouli4 (remove the last added one)
+            function removeRValueShouli4() {
+                const group = document.getElementById('r' + lastRIndex4 + '-group-shouli4');
+                if (group) {
+                    group.remove();
+                }
+                lastRIndex4--; // Update lastRIndex for shouli4
+            }
+            
+            // Function to add a new input field for r values in shouli5
+            function addRValueShouli5() {
+                const container = document.getElementById('additional-r-values-shouli5');
+                const inputGroup = document.createElement('div');
+                inputGroup.classList.add('input-group');
+                inputGroup.id = 'r' + rIndex5 + '-group-shouli5';
+            
+                // Create r input field for shouli5
+                const inputField = document.createElement('input');
+                inputField.type = 'number';
+                inputField.name = 'r' + rIndex5; // name for r values in shouli5
+                inputField.placeholder = 'r' + rIndex5 + ' (mm)';
+                inputField.required = true;
+                inputField.step = '0.01';
+            
+                // Create remove button for shouli5
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.textContent = '-';
+                removeButton.onclick = function() {
+                    removeRValueShouli5();
+                };
+            
+                // Append the input and button to the input group
+                inputGroup.appendChild(inputField);
+                inputGroup.appendChild(removeButton);
+                container.appendChild(inputGroup);
+            
+                lastRIndex5 = rIndex5; // Set the last added input index for shouli5
+                rIndex5++; // Increment index for the next input field in shouli5
+            }
+            
+            // Function to remove a specific r value input field for shouli5 (remove the last added one)
+            function removeRValueShouli5() {
+                const group = document.getElementById('r' + lastRIndex5 + '-group-shouli5');
+                if (group) {
+                    group.remove();
+                }
+                lastRIndex5--; // Update lastRIndex for shouli5
+            }
+    </script>
+    <script>
+            // Toggle visibility function for each calculator
+            function toggleCalculator(button) {
+                const calculatorContent = button.closest('.calculator').querySelector('.calculator-content');
+                const currentText = button.textContent;
+            
+                if (currentText === '+') {
+                    calculatorContent.style.display = 'block'; // Hide content
+                    button.textContent = '-'; // Change to plus sign
+                } else {
+                    calculatorContent.style.display = 'none'; // Show content
+                    button.textContent = '+'; // Change to minus sign
+                }
+            }
+    </script>
+    <script>
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            // 팝업 계산기 열기
+            function openCalculator() {
+                document.getElementById('calculatorPopup').style.display = 'block';
+                document.getElementById('openCalculatorBtn').style.display = 'none'; // 버튼 숨김
+            }
+            
+            // 팝업 계산기 닫기
+            function closeCalculator() {
+                document.getElementById('calculatorPopup').style.display = 'none';
+                document.getElementById('openCalculatorBtn').style.display = 'block'; // 버튼 다시 보이게
+            }
+            
+            // 계산기 화면에 값 추가
+            function appendValue(value) {
+                const display = document.getElementById('calcDisplay');
+                if (display.value === '0' && value !== '.') {
+                    display.value = value; // 0으로 시작하지 않게 처리
+                } else {
+                    display.value += value;
+                }
+            }
+            
+            // 계산기 화면 초기화
+            function clearDisplay() {
+                document.getElementById('calcDisplay').value = '0';
+            }
+            
+            // 계산 결과 계산
+            function calculateResult() {
+                const display = document.getElementById('calcDisplay');
+                try {
+                    display.value = eval(display.value); // 문자열을 평가하여 계산
+                } catch (e) {
+                    display.value = 'Error';
+                }
+            }
+            
+            // 드래그 기능
+            const dragHeader = document.getElementById('dragHeader');
+            
+            dragHeader.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - document.getElementById('calculatorPopup').offsetLeft;
+                offsetY = e.clientY - document.getElementById('calculatorPopup').offsetTop;
+                
+                // 마우스 이동 중 위치 업데이트
+                document.addEventListener('mousemove', dragMove);
+                document.addEventListener('mouseup', stopDragging);
+            });
+            
+            function dragMove(e) {
+                if (isDragging) {
+                    const popup = document.getElementById('calculatorPopup');
+                    popup.style.left = (e.clientX - offsetX) + 'px';
+                    popup.style.top = (e.clientY - offsetY) + 'px';
+                }
+            }
+            
+            function stopDragging() {
+                isDragging = false;
+                document.removeEventListener('mousemove', dragMove);
+                document.removeEventListener('mouseup', stopDragging);
+            }
+    </script>
+        
 </body>
 </html>

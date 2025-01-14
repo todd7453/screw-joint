@@ -1,1 +1,2 @@
-web: gunicorn screw_joint.wsgi --log-file -
+web: gunicorn screw-joint.wsgi 
+release: python manage.py migrate

@@ -2,10 +2,5048 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>힘 분석 입력</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标准化支持</title>
+    {% load static %}
+    <style>
+        body {
+            background-color: #FAF9F6; /* 오프 화이트 색상 */
+            text-align: center; /* 모든 텍스트를 가운데 정렬 */
+            font-family: Arial, simsun; /* 폰트 설정 */
+            overflow-x: hidden; /* 화면 밖으로 나가지 않도록 */
+        }
+        /* 팝업 계산기 스타일 */
+        .calculator-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            display: none; /* 처음에는 숨겨짐 */
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000; /* 다른 요소들 위에 표시되도록 */
+        }
+        
+        .calculator-popup-header {
+            background-color: #f1f1f1;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move; /* 상단바를 드래그 가능하도록 설정 */
+        }
+        
+        .calculator-popup-header button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        .calculator-body {
+            padding: 10px;
+        }
+        
+        .calculator-body input {
+            width: 90%;
+            height: 40px;
+            font-size: 20px;
+            text-align: right;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .calculator-buttons button {
+            width: 50px;
+            height: 50px;
+            margin: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        .calculator-buttons button:hover {
+            background-color: #ddd;
+        }
+        
+        .open-calculator-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .open-calculator-btn:hover {
+            background-color: #575757;
+        }
+        .menu-toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 20; /* 메뉴 바보다 위에 표시되도록 */
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .menu-toggle-btn:hover {
+            background-color: #575757;
+        }
+        .sidebar {
+            position: fixed; /* 메뉴 바 고정 */
+            top: 0;
+            left: -200px; /* 기본적으로 메뉴 바는 숨겨져 있음 */
+            height: 100%; /* 전체 높이 */
+            width: 200px; /* 메뉴 바 너비 */
+            background-color: #333;
+            padding-top: 20px;
+            padding-left: 20px;
+            box-sizing: border-box;
+            transition: left 0.3s ease; /* 메뉴 바가 나타나는 애니메이션 */
+            z-index: 50; /* 메뉴 바가 버튼과 페이지 콘텐츠 위에 오도록 설정 */
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 18px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #444;
+        }
+
+        .sidebar a:hover {
+            background-color: #575757;
+        }
+        /* 메뉴 칸 */
+        .menu-box {
+            background-color: #444; /* 배경색 */
+            margin-bottom: 10px; /* 각 메뉴 항목 간의 간격 */
+            top: 300px;
+            border-radius: 4px;
+            padding: 20px 10px;
+        }
+        .menu-box a {
+            display: block;
+            color: white;
+            font-size: 18px;
+            text-decoration: none;
+            padding: 15px;
+            background-color: #333;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .menu-box a:hover {
+            background-color: #575757;
+        }
+
+        /* 마우스가 왼쪽 끝에 올려졌을 때 메뉴 바가 보이도록 */
+        .sidebar-wrapper {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50px; /* 마우스를 올릴 영역을 더 넓게 설정 */
+            height: 100%;
+        }
+
+        /* 메뉴 바가 보이는 상태 */
+        .show-sidebar {
+            left: 0; /* 메뉴 바가 보이도록 왼쪽 위치를 0으로 설정 */
+        }
+        /* 각 세션의 스타일 */
+        section {
+            margin: 50px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            transition: background-color 0.3s ease, border 0.3s ease;
+        }
+        .table-container {
+            overflow-x: auto;  /* 가로 스크롤 추가 */
+            -webkit-overflow-scrolling: touch;  /* 모바일에서 스크롤 부드럽게 */
+            margin-bottom: 20px;
+        }
+        /* 각 버튼의 스타일 */
+        .session-button {
+            font-size: 16px;
+            padding: 10px 20px;
+            background-color: #FFEBAA;
+            color: black;
+            border: 2px solid #D29B5B;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .session-button:hover {
+            background-color: rgb(192, 179, 91);
+            z-index: 1000;
+        }
+
+        .scroll-container {
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 15px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 5px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-size: 15px;
+        }
+        .highlight {
+            background-color: #FFEBAA;  /* 노란색 배경 */
+            border: 3px solid #ffeb3b;  /* 오렌지색 테두리 */
+        }
+        /* 계산기 화면 */
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin: 20px 0;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .image-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .img {
+            max-width: 100%; /* Make sure image fits inside container */
+            height: auto;
+            border-radius: 10px;
+        }
+        td {
+            white-space: normal; /* 텍스트가 셀 안에서 여러 줄로 표시되도록 설정 */
+            line-height: 1.5; /* 줄 간격 조정 */
+            font-size: 15px;
+        }
+        .scrollToTopBtn {
+            position: fixed; 
+            bottom: 20px; /* 하단에서 20px 떨어짐 */
+            right: 20px; /* 우측에서 20px 떨어짐 */
+            z-index: 20;
+            padding: 15px 15px;
+            font-size: 16px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+            display: flex; 
+        }
+        .scrollToTopBtn i {
+            font-size: 24px; /* 화살표 크기 */
+        }
+        .scrollToTopBtn:hover {
+            background-color: #333;
+        }
+    </style>
 </head>
 <body>
-    <h1>힘 분석 입력</h1>
+    {% if messages %}
+    <div class="alert">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+        <!-- 메뉴 열기/닫기 버튼 -->
+        <button class="menu-toggle-btn" onclick="toggleSidebar()">MENU</button>
+        <button class="scrollToTopBtn" onclick="scrollToTop()">
+            <i class="fas fa-arrow-up"></i>
+        </button> 
+        <div class="sidebar-wrapper"></div> <!-- 마우스가 올려졌을 때 메뉴 바 표시 -->
+        
+        <!-- 왼쪽 메뉴 바 -->
+        <div class="sidebar" id="sidebar">
+            <div class="menu-box">
+                <a href="{% url 'home' %}">Home</a>
+                <a href="{% url 'force_analysis' %}">受力分析</a>
+                <a href="{% url 'strength_calculation' %}">强度计算</a>
+                <a href="{% url 'shape_material_analysis' %}">形态，设计分析</a>
+                <a href="{% url 'thread_parameter_definition' %}">Thread Parameter Definition</a>
+                <a href="{% url 'standard_support' %}">Standard Support</a>
+            </div>
+        </div>    
+    <div class="scroll-container">
+        <button class="session-button" onclick="scrollToSession(6)">常用螺纹标准一览</button>
+        <button class="session-button" onclick="scrollToSession(1)">ISO 720（相应GB/T 196-2003）</button>
+        <button class="session-button" onclick="scrollToSession(2)">预紧连接结合面的摩擦因数μ</button>
+        <button class="session-button" onclick="scrollToSession(3)">底板螺栓连接结合面的许用挤压应力σ<sub>pp</sub></button>
+    </div>
+    <div class="scroll-container">
+        <button class="session-button" onclick="scrollToSession(4)">螺纹连接件常用材料及力学性能</button>
+        <button class="session-button" onclick="scrollToSession(5)">受轴向载荷时预紧螺栓连接所需剩余预紧力及做栓连接的相对刚度系数</button>
+        <button class="session-button" onclick="scrollToSession(7)">预紧连接的螺栓安全系数S<sub>S</sub></button>
+    </div>
+    <div class="scroll-container">
+        <button class="session-button" onclick="scrollToSession(8)">拧紧力矩系数K</button>
+        <button class="session-button" onclick="scrollToSession(9)">螺栓许用应力幅计算公式</button>
+        <button class="session-button" onclick="scrollToSession(10)">螺栓，螺钉和螺柱的材料和力学物理性能1 (GB/T 3098.1-2010)</button>
+    </div>
+    <div class="scroll-container">
+        <button class="session-button" onclick="scrollToSession(11)">螺栓，螺钉和螺柱的材料和力学物理性能2 (GB/T 3098.1-2010)</button>
+        <button class="session-button" onclick="scrollToSession(12)">常用材料弹性模量，切变模量，泊松比表</button>
+    </div>
+    <div class="scroll-container">
+        <button class="session-button" onclick="scrollToSession(13)">六角头螺栓全螺纹C级（GB/T 5780-2000,GB/T 5781-2000）</button>
+    </div>
+    <section id="session6">
+        <h2>常用螺纹标准一览</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>标准名称</th>
+                    <th>标准号</th>
+                    <th>对应的国际标准</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>螺纹术语</td>
+                    <td>GB/T 14791-2013</td>
+                    <td>ISO 5408</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>普通螺纹 基本牙型</td>
+                    <td>GB/T 192-2003</td>
+                    <td>ISO 68</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>普通螺纹 直径与螺距系列</td>
+                    <td>GB/T 193-2003</td>
+                    <td>ISO 261</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>普通螺纹 基本尺寸</td>
+                    <td>GB/T 196-2003</td>
+                    <td>ISO 724</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>普通螺纹 公差</td>
+                    <td>GB/T 197-2003</td>
+                    <td>ISO 965-1</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>普通螺纹 极限偏差</td>
+                    <td>GB/T 2516-2003</td>
+                    <td>ISO 965-3</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>普通螺纹 优选系列</td>
+                    <td>GB/T 9144-2003</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>普通螺纹 中等精度优选系列的极限尺寸</td>
+                    <td>GB/T 9145-2003</td>
+                    <td>ISO 965-2</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td>普通螺纹 粗糙精度优选系列的极限尺寸</td>
+                    <td>GB/T 9146-2003</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td>商品紧固件的普通螺纹选用系列</td>
+                    <td>JB/T 7912-1999</td>
+                    <td>ISO 262</td>
+                </tr>
+                <tr>
+                    <td>11</td>
+                    <td>普通螺纹 极限尺寸</td>
+                    <td>GB/T 15756-2008</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>12</td>
+                    <td>普通螺纹 量规技术条件</td>
+                    <td>GB/T 3934-2003</td>
+                    <td>ISO 1502</td>
+                </tr>
+                <tr>
+                    <td>13</td>
+                    <td>光学仪器　特种细牙螺纹</td>
+                    <td>JB/T 9313-1999</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>14</td>
+                    <td>光学仪器用目镜螺纹</td>
+                    <td>JB/T 8240-1999</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>15</td>
+                    <td>光学仪器用短牙螺纹</td>
+                    <td>JB/T 5450-2007</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>16</td>
+                    <td>MJ螺纹第一部分：通用要求</td>
+                    <td>GJB 3.1-2003</td>
+                    <td>ISO 5855</td>
+                </tr>
+                <tr>
+                    <td>17</td>
+                    <td>MJ螺纹第二部分：螺栓螺母螺纹的极限尺寸</td>
+                    <td>GJB 3.2-2003</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>18</td>
+                    <td>MJ螺纹第三部分：管路件螺纹的极限尺寸</td>
+                    <td>GJB 3.3-2003</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>19</td>
+                    <td>过渡配合螺纹</td>
+                    <td>GB/T 1167-1996</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>20</td>
+                    <td>过渡配合螺纹</td>
+                    <td>GB/T 1181-1998</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>21</td>
+                    <td>小螺纹 牙型</td>
+                    <td>GB/T 15054.1-1994</td>
+                    <td>ISO 1501</td>
+                </tr>
+                <tr>
+                    <td>22</td>
+                    <td>小螺纹 直径与螺距系列</td>
+                    <td>GB/T 15054.2-1994</td>
+                    <td>ISO 1501</td>
+                </tr>
+                <tr>
+                    <td>23</td>
+                    <td>小螺纹 公差</td>
+                    <td>GB/T 15054.3-1994</td>
+                    <td>ISO 1501</td>
+                </tr>
+                <tr>
+                    <td>24</td>
+                    <td>小螺纹 极限尺寸</td>
+                    <td>GB/T 15054.4-1994</td>
+                    <td>ISO 1501</td>
+                </tr>
+                <tr>
+                    <td>25</td>
+                    <td>梯形螺纹 牙型</td>
+                    <td>GB/T 5796.1-2005</td>
+                    <td>ISO 2901</td>
+                </tr>
+                <tr>
+                    <td>26</td>
+                    <td>梯形螺纹 直径与螺距系列</td>
+                    <td>GB/T 5796.2-2005</td>
+                    <td>ISO 2902</td>
+                </tr>
+                <tr>
+                    <td>27</td>
+                    <td>梯形螺纹 基本尺寸</td>
+                    <td>GB/T 5796.3-2005</td>
+                    <td>ISO 2904</td>
+                </tr>
+                <tr>
+                    <td>28</td>
+                    <td>梯形螺纹 公差</td>
+                    <td>GB/T 5796.4-2005</td>
+                    <td>ISO 12903</td>
+                </tr>
+                <tr>
+                    <td>29</td>
+                    <td>梯形螺纹 极限尺寸</td>
+                    <td>GB/T 12359-2008</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>30</td>
+                    <td>机床梯形螺纹丝杠、螺母技术条件</td>
+                    <td>JB/T 2886-2008</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>31</td>
+                    <td>机床梯形螺纹丝杠、螺母技术条件</td>
+                    <td>JB/T 2886-2008</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>32</td>
+                    <td>锯齿形（3°,30°）螺纹牙型</td>
+                    <td>GB/T 13576.1-2008</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>33</td>
+                    <td>锯齿形（3°,30°）螺纹直径与螺距系列</td>
+                    <td>GB/T 13576.2-2008</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>34</td>
+                    <td>锯齿形（3°,30°）螺纹基本尺寸</td>
+                    <td>GB/T 13576.3-2008</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>35</td>
+                    <td>锯齿形（3°,30°）螺纹公差</td>
+                    <td>GB/T 13576.4-2008</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>36</td>
+                    <td>水压机45°锯齿形螺纹牙型与基本尺寸</td>
+                    <td>JB/T 2001.73-1999</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>37</td>
+                    <td>55°密封管螺纹第一部分：圆柱内螺纹与圆锥外螺纹</td>
+                    <td>GB/T 7306.1-2000</td>
+                    <td>ISO 7-1</td>
+                </tr>
+                <tr>
+                    <td>38</td>
+                    <td>55°密封管螺纹第二部分：圆锥内螺纹与圆锥外螺纹</td>
+                    <td>GB/T 7306.2-2000</td>
+                    <td>ISO 7-1</td>
+                </tr>
+                <tr>
+                    <td>39</td>
+                    <td>55°非密封管螺纹</td>
+                    <td>GB/T 7306.3-2000</td>
+                    <td>ISO 228-1</td>
+                </tr>
+                <tr>
+                    <td>40</td>
+                    <td>60°密封管螺纹</td>
+                    <td>GB/T 12716-2011</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>41</td>
+                    <td>用螺纹密封的管螺纹量规</td>
+                    <td>JB/T 10031-1999</td>
+                    <td>ISO 7-2</td>
+                </tr>
+                <tr>
+                    <td>42</td>
+                    <td>非螺纹密封的管螺纹量规</td>
+                    <td>JB/T 10031-1999</td>
+                    <td>ISO 228-2</td>
+                </tr>
+                <tr>
+                    <td>43</td>
+                    <td>普通螺纹　管路系列</td>
+                    <td>GB/T 1414-2013</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>44</td>
+                    <td>米制密封螺纹</td>
+                    <td>GB/T 1415-2008</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>45</td>
+                    <td>气瓶专用螺纹</td>
+                    <td>GB/T 1415-2008</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>46</td>
+                    <td>气瓶专用螺纹量规</td>
+                    <td>GB/T 8336-2011</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>47</td>
+                    <td>轮胎气门嘴螺纹</td>
+                    <td>GB/T 9765-2009</td>
+                    <td>ISO 4570</td>
+                </tr>
+                <tr>
+                    <td>48</td>
+                    <td>气口和螺柱端</td>
+                    <td>GB/T 14038-2008</td>
+                    <td>ISO 7180</td>
+                </tr>
+                <tr>
+                    <td>49</td>
+                    <td>包装 玻璃容器 螺纹瓶口尺寸</td>
+                    <td>GB/T 17449-1998</td>
+                    <td>ISO 9056</td>
+                </tr>
+                <tr>
+                    <td>50</td>
+                    <td>螺纹样板</td>
+                    <td>JB/T 7981-2010</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>51</td>
+                    <td>普通螺纹 收尾、肩距、退刀槽和倒角</td>
+                    <td>GB/T 3-1997</td>
+                    <td>ISO 3508</td>
+                </tr>
+                <tr>
+                    <td>52</td>
+                    <td>搓、滚制普通螺纹前的毛坯直径</td>
+                    <td>GB/T 18685-2002</td>
+                    <td>ISO 4755</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
 
+    <section id="session1">
+        <h2>ISO 720（相应GB/T 196-2003）</h2>
+        <div class="image-container">
+            <img src="{% static 'calculator/session1.png' %}" alt="세션 1">
+        </div>        
+        <div class="image-container">
+            <img src="{% static 'calculator/session1-1.png' %}" alt="세션 1-1">
+        </div>    
+        <table>
+            <thead>
+                <tr>
+                    <th>公称直径  D,d</th>
+                    <th>螺距 P</th>
+                    <th>中经 D2=d2</th>
+                    <th>小径 D1=d1</th>
+                    <th>原始三角形高度 H<th>
+                    <th>公称直径  D,d</th>
+                    <th>螺距 P</th>
+                    <th>中经 D2=d2</th>
+                    <th>小径 D1=d1</th>
+                    <th>原始三角形高度 H</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>M 1.0</td>
+                    <td>0.20</td>
+                    <td id="D2_1"></td>
+                    <td id="D1_1"></td>
+                    <td id="H_1"><td>
+                    <td>M 1.0</td>
+                    <td>0.25</td>
+                    <td id="D2_2"></td>
+                    <td id="D1_2"></td>
+                    <td id="H_2"></td>
+                </tr>
+                <tr>
+                    <td>M 1.1</td>
+                    <td>0.20</td>
+                    <td id="D2_3"></td>
+                    <td id="D1_3"></td>
+                    <td id="H_3"><td>
+                    <td>M 1.1</td>
+                    <td>0.25</td>
+                    <td id="D2_4"></td>
+                    <td id="D1_4"></td>
+                    <td id="H_4"></td>
+                </tr>
+                <tr>
+                    <td>M 1.2</td>
+                    <td>0.20</td>
+                    <td id="D2_5"></td>
+                    <td id="D1_5"></td>
+                    <td id="H_5"><td>
+                    <td>M 1.2</td>
+                    <td>0.25</td>
+                    <td id="D2_6"></td>
+                    <td id="D1_6"></td>
+                    <td id="H_6"></td>
+                </tr>
+                <tr>
+                    <td>M 1.4</td>
+                    <td>0.20</td>
+                    <td id="D2_7"></td>
+                    <td id="D1_7"></td>
+                    <td id="H_7"><td>
+                    <td>M 1.4</td>
+                    <td>0.30</td>
+                    <td id="D2_8"></td>
+                    <td id="D1_8"></td>
+                    <td id="H_8"></td>
+                </tr>
+                <tr>
+                    <td>M 1.6</td>
+                    <td>0.20</td>
+                    <td id="D2_9"></td>
+                    <td id="D1_9"></td>
+                    <td id="H_9"><td>
+                    <td>M 1.6</td>
+                    <td>0.35</td>
+                    <td id="D2_10"></td>
+                    <td id="D1_10"></td>
+                    <td id="H_10"></td>
+                </tr>
+                <tr>
+                    <td>M 1.8</td>
+                    <td>0.20</td>
+                    <td id="D2_11"></td>
+                    <td id="D1_11"></td>
+                    <td id="H_11"><td>
+                    <td>M 1.8</td>
+                    <td>0.35</td>
+                    <td id="D2_12"></td>
+                    <td id="D1_12"></td>
+                    <td id="H_12"></td>
+                </tr>
+                <tr>
+                    <td>M 2</td>
+                    <td>0.25</td>
+                    <td id="D2_13"></td>
+                    <td id="D1_13"></td>
+                    <td id="H_13"><td>
+                    <td>M 2</td>
+                    <td>0.40</td>
+                    <td id="D2_14"></td>
+                    <td id="D1_14"></td>
+                    <td id="H_14"></td>
+                </tr>
+                <tr>
+                    <td>M 2.2</td>
+                    <td>0.25</td>
+                    <td id="D2_15"></td>
+                    <td id="D1_15"></td>
+                    <td id="H_15"><td>
+                    <td>M 2.2</td>
+                    <td>0.45</td>
+                    <td id="D2_16"></td>
+                    <td id="D1_16"></td>
+                    <td id="H_16"></td>
+                </tr>
+                <tr>
+                    <td>M 2.5</td>
+                    <td>0.35</td>
+                    <td id="D2_17"></td>
+                    <td id="D1_17"></td>
+                    <td id="H_17"><td>
+                    <td>M 2.5</td>
+                    <td>0.45</td>
+                    <td id="D2_18"></td>
+                    <td id="D1_18"></td>
+                    <td id="H_18"></td>
+                </tr>
+                <tr>
+                    <td>M 3</td>
+                    <td>0.35</td>
+                    <td id="D2_19"></td>
+                    <td id="D1_19"></td>
+                    <td id="H_19"><td>
+                    <td>M 3</td>
+                    <td>0.50</td>
+                    <td id="D2_20"></td>
+                    <td id="D1_20"></td>
+                    <td id="H_20"></td>
+                </tr>
+                <tr>
+                    <td>M 3.5</td>
+                    <td>0.35</td>
+                    <td id="D2_21"></td>
+                    <td id="D1_21"></td>
+                    <td id="H_21"><td>
+                    <td>M 3.5</td>
+                    <td>0.60</td>
+                    <td id="D2_22"></td>
+                    <td id="D1_22"></td>
+                    <td id="H_22"></td>
+                </tr>
+                <tr>
+                    <td>M 4</td>
+                    <td>0.5</td>
+                    <td id="D2_23"></td>
+                    <td id="D1_23"></td>
+                    <td id="H_23"><td>
+                    <td>M 4</td>
+                    <td>0.7</td>
+                    <td id="D2_24"></td>
+                    <td id="D1_24"></td>
+                    <td id="H_24"></td>
+                </tr>
+                <tr>
+                    <td>M 4.5</td>
+                    <td>0.5</td>
+                    <td id="D2_25"></td>
+                    <td id="D1_25"></td>
+                    <td id="H_25"><td>
+                    <td>M 4.5</td>
+                    <td>0.75</td>
+                    <td id="D2_26"></td>
+                    <td id="D1_26"></td>
+                    <td id="H_26"></td>
+                </tr>
+                <tr>
+                    <td>M 5</td>
+                    <td>0.5</td>
+                    <td id="D2_27"></td>
+                    <td id="D1_27"></td>
+                    <td id="H_27"><td>
+                    <td>M 5</td>
+                    <td>0.8</td>
+                    <td id="D2_28"></td>
+                    <td id="D1_28"></td>
+                    <td id="H_28"></td>
+                </tr>
+                <tr>
+                    <td>M 5.5</td>
+                    <td>0.5</td>
+                    <td id="D2_29"></td>
+                    <td id="D1_29"></td>
+                    <td id="H_29"><td>
+                    <td>M 6</td>
+                    <td>0.75</td>
+                    <td id="D2_30"></td>
+                    <td id="D1_30"></td>
+                    <td id="H_30"></td>
+                </tr>
+                <tr>
+                    <td>M 6</td>
+                    <td>1</td>
+                    <td id="D2_31"></td>
+                    <td id="D1_31"></td>
+                    <td id="H_31"><td>
+                    <td>M 7</td>
+                    <td>0.75</td>
+                    <td id="D2_32"></td>
+                    <td id="D1_32"></td>
+                    <td id="H_32"></td>
+                </tr>
+                <tr>
+                    <td>M 7</td>
+                    <td>1</td>
+                    <td id="D2_33"></td>
+                    <td id="D1_33"></td>
+                    <td id="H_33"><td>
+                    <td>M 8</td>
+                    <td>0.75</td>
+                    <td id="D2_34"></td>
+                    <td id="D1_34"></td>
+                    <td id="H_34"></td>
+                </tr>
+                <tr>
+                    <td>M 8</td>
+                    <td>1</td>
+                    <td id="D2_35"></td>
+                    <td id="D1_35"></td>
+                    <td id="H_35"><td>
+                    <td>M 8</td>
+                    <td>1.25</td>
+                    <td id="D2_36"></td>
+                    <td id="D1_36"></td>
+                    <td id="H_36"></td>
+                </tr>
+                <tr>
+                    <td>M 9</td>
+                    <td>0.75</td>
+                    <td id="D2_37"></td>
+                    <td id="D1_37"></td>
+                    <td id="H_37"><td>
+                    <td>M 9</td>
+                    <td>1</td>
+                    <td id="D2_38"></td>
+                    <td id="D1_38"></td>
+                    <td id="H_38"></td>
+                </tr>
+                <tr>
+                    <td>M 9</td>
+                    <td>1.25</td>
+                    <td id="D2_39"></td>
+                    <td id="D1_39"></td>
+                    <td id="H_39"><td>
+                    <td>M 10</td>
+                    <td>0.75</td>
+                    <td id="D2_40"></td>
+                    <td id="D1_40"></td>
+                    <td id="H_40"></td>
+                </tr>
+                <tr>
+                    <td>M 10</td>
+                    <td>1</td>
+                    <td id="D2_41"></td>
+                    <td id="D1_41"></td>
+                    <td id="H_41"><td>
+                    <td>M 10</td>
+                    <td>1.25</td>
+                    <td id="D2_42"></td>
+                    <td id="D1_42"></td>
+                    <td id="H_42"></td>
+                </tr>
+                <tr>
+                    <td>M 10</td>
+                    <td>1.5</td>
+                    <td id="D2_43"></td>
+                    <td id="D1_43"></td>
+                    <td id="H_43"><td>
+                    <td>M 11</td>
+                    <td>0.75</td>
+                    <td id="D2_44"></td>
+                    <td id="D1_44"></td>
+                    <td id="H_44"></td>
+                </tr>
+                <tr>
+                    <td>M 11</td>
+                    <td>1</td>
+                    <td id="D2_45"></td>
+                    <td id="D1_45"></td>
+                    <td id="H_45"><td>
+                    <td>M 11</td>
+                    <td>1.5</td>
+                    <td id="D2_46"></td>
+                    <td id="D1_46"></td>
+                    <td id="H_46"></td>
+                </tr>
+                <tr>
+                    <td>M 12</td>
+                    <td>1</td>
+                    <td id="D2_47"></td>
+                    <td id="D1_47"></td>
+                    <td id="H_47"><td>
+                    <td>M 12</td>
+                    <td>1.25</td>
+                    <td id="D2_48"></td>
+                    <td id="D1_48"></td>
+                    <td id="H_48"></td>
+                </tr>
+                <tr>
+                    <td>M 12</td>
+                    <td>1.5</td>
+                    <td id="D2_49"></td>
+                    <td id="D1_49"></td>
+                    <td id="H_49"><td>
+                    <td>M 12</td>
+                    <td>1.75</td>
+                    <td id="D2_50"></td>
+                    <td id="D1_50"></td>
+                    <td id="H_50"></td>
+                </tr>
+                <tr>
+                    <td>M 14</td>
+                    <td>1</td>
+                    <td id="D2_51"></td>
+                    <td id="D1_51"></td>
+                    <td id="H_51"><td>
+                    <td>M 14</td>
+                    <td>1.25</td>
+                    <td id="D2_52"></td>
+                    <td id="D1_52"></td>
+                    <td id="H_52"></td>
+                </tr>
+                <tr>
+                    <td>M 14</td>
+                    <td>1.5</td>
+                    <td id="D2_53"></td>
+                    <td id="D1_53"></td>
+                    <td id="H_53"><td>
+                    <td>M 14</td>
+                    <td>2</td>
+                    <td id="D2_54"></td>
+                    <td id="D1_54"></td>
+                    <td id="H_54"></td>
+                </tr>
+                <tr>
+                    <td>M 15</td>
+                    <td>1</td>
+                    <td id="D2_55"></td>
+                    <td id="D1_55"></td>
+                    <td id="H_55"><td>
+                    <td>M 15</td>
+                    <td>1.5</td>
+                    <td id="D2_56"></td>
+                    <td id="D1_56"></td>
+                    <td id="H_56"></td>
+                </tr>
+                <tr>
+                    <td>M 16</td>
+                    <td>1</td>
+                    <td id="D2_57"></td>
+                    <td id="D1_57"></td>
+                    <td id="H_57"><td>
+                    <td>M 16</td>
+                    <td>1.5</td>
+                    <td id="D2_58"></td>
+                    <td id="D1_58"></td>
+                    <td id="H_58"></td>
+                </tr>
+                <tr>
+                    <td>M 16</td>
+                    <td>2</td>
+                    <td id="D2_59"></td>
+                    <td id="D1_59"></td>
+                    <td id="H_59"><td>
+                    <td>M 17</td>
+                    <td>1</td>
+                    <td id="D2_60"></td>
+                    <td id="D1_60"></td>
+                    <td id="H_60"></td>
+                </tr>
+                <tr>
+                    <td>M 17</td>
+                    <td>1.5</td>
+                    <td id="D2_61"></td>
+                    <td id="D1_61"></td>
+                    <td id="H_61"><td>
+                    <td>M 18</td>
+                    <td>1</td>
+                    <td id="D2_62"></td>
+                    <td id="D1_62"></td>
+                    <td id="H_62"></td>
+                </tr>
+                <tr>
+                    <td>M 18</td>
+                    <td>1.5</td>
+                    <td id="D2_63"></td>
+                    <td id="D1_63"></td>
+                    <td id="H_63"><td>
+                    <td>M 18</td>
+                    <td>2</td>
+                    <td id="D2_64"></td>
+                    <td id="D1_64"></td>
+                    <td id="H_64"></td>
+                </tr>
+                <tr>
+                    <td>M 18</td>
+                    <td>2.5</td>
+                    <td id="D2_65"></td>
+                    <td id="D1_65"></td>
+                    <td id="H_65"><td>
+                    <td>M 20</td>
+                    <td>1</td>
+                    <td id="D2_66"></td>
+                    <td id="D1_66"></td>
+                    <td id="H_66"></td>
+                </tr>
+                <tr>
+                    <td>M 20</td>
+                    <td>1.5</td>
+                    <td id="D2_67"></td>
+                    <td id="D1_67"></td>
+                    <td id="H_67"><td>
+                    <td>M 20</td>
+                    <td>2</td>
+                    <td id="D2_68"></td>
+                    <td id="D1_68"></td>
+                    <td id="H_68"></td>
+                </tr>
+                <tr>
+                    <td>M 20</td>
+                    <td>2.5</td>
+                    <td id="D2_69"></td>
+                    <td id="D1_69"></td>
+                    <td id="H_69"><td>
+                    <td>M 22</td>
+                    <td>1</td>
+                    <td id="D2_70"></td>
+                    <td id="D1_70"></td>
+                    <td id="H_70"></td>
+                </tr>
+                <tr>
+                    <td>M 22</td>
+                    <td>1.5</td>
+                    <td id="D2_71"></td>
+                    <td id="D1_71"></td>
+                    <td id="H_71"><td>
+                    <td>M 22</td>
+                    <td>2</td>
+                    <td id="D2_72"></td>
+                    <td id="D1_72"></td>
+                    <td id="H_72"></td>
+                </tr>
+                <tr>
+                    <td>M 22</td>
+                    <td>2.5</td>
+                    <td id="D2_73"></td>
+                    <td id="D1_73"></td>
+                    <td id="H_73"><td>
+                    <td>M 24</td>
+                    <td>1</td>
+                    <td id="D2_74"></td>
+                    <td id="D1_74"></td>
+                    <td id="H_74"></td>
+                </tr>
+                <tr>
+                    <td>M 24</td>
+                    <td>1.5</td>
+                    <td id="D2_75"></td>
+                    <td id="D1_75"></td>
+                    <td id="H_75"><td>
+                    <td>M 24</td>
+                    <td>2</td>
+                    <td id="D2_76"></td>
+                    <td id="D1_76"></td>
+                    <td id="H_76"></td>
+                </tr>
+                <tr>
+                    <td>M 24</td>
+                    <td>3</td>
+                    <td id="D2_77"></td>
+                    <td id="D1_77"></td>
+                    <td id="H_77"><td>
+                    <td>M 25</td>
+                    <td>1</td>
+                    <td id="D2_78"></td>
+                    <td id="D1_78"></td>
+                    <td id="H_78"></td>
+                </tr>
+                <tr>
+                    <td>M 25</td>
+                    <td>1.5</td>
+                    <td id="D2_79"></td>
+                    <td id="D1_79"></td>
+                    <td id="H_79"><td>
+                    <td>M 25</td>
+                    <td>2</td>
+                    <td id="D2_80"></td>
+                    <td id="D1_80"></td>
+                    <td id="H_80"></td>
+                </tr>
+                <tr>
+                    <td>M 26</td>
+                    <td>1.5</td>
+                    <td id="D2_81"></td>
+                    <td id="D1_81"></td>
+                    <td id="H_81"><td>
+                    <td>M 27</td>
+                    <td>1</td>
+                    <td id="D2_82"></td>
+                    <td id="D1_82"></td>
+                    <td id="H_82"></td>
+                </tr>
+                <tr>
+                    <td>M 27</td>
+                    <td>1.5</td>
+                    <td id="D2_83"></td>
+                    <td id="D1_83"></td>
+                    <td id="H_83"><td>
+                    <td>M 27</td>
+                    <td>2</td>
+                    <td id="D2_84"></td>
+                    <td id="D1_84"></td>
+                    <td id="H_84"></td>
+                </tr>
+                <tr>
+                    <td>M 27</td>
+                    <td>3</td>
+                    <td id="D2_85"></td>
+                    <td id="D1_85"></td>
+                    <td id="H_85"><td>
+                    <td>M 28</td>
+                    <td>1</td>
+                    <td id="D2_86"></td>
+                    <td id="D1_86"></td>
+                    <td id="H_86"></td>
+                </tr>
+                <tr>
+                    <td>M 28</td>
+                    <td>1.5</td>
+                    <td id="D2_87"></td>
+                    <td id="D1_87"></td>
+                    <td id="H_87"><td>
+                    <td>M 28</td>
+                    <td>2</td>
+                    <td id="D2_88"></td>
+                    <td id="D1_88"></td>
+                    <td id="H_88"></td>
+                </tr>
+                <tr>
+                    <td>M 30</td>
+                    <td>1</td>
+                    <td id="D2_89"></td>
+                    <td id="D1_89"></td>
+                    <td id="H_89"><td>
+                    <td>M 30</td>
+                    <td>1.5</td>
+                    <td id="D2_90"></td>
+                    <td id="D1_90"></td>
+                    <td id="H_90"></td>
+                </tr>
+                <tr>
+                    <td>M 30</td>
+                    <td>2</td>
+                    <td id="D2_91"></td>
+                    <td id="D1_91"></td>
+                    <td id="H_91"><td>
+                    <td>M 30</td>
+                    <td>3</td>
+                    <td id="D2_92"></td>
+                    <td id="D1_92"></td>
+                    <td id="H_92"></td>
+                </tr>
+                <tr>
+                    <td>M 30</td>
+                    <td>3.5</td>
+                    <td id="D2_93"></td>
+                    <td id="D1_93"></td>
+                    <td id="H_93"><td>
+                    <td>M 32</td>
+                    <td>1.5</td>
+                    <td id="D2_94"></td>
+                    <td id="D1_94"></td>
+                    <td id="H_94"></td>
+                </tr>
+                <tr>
+                    <td>M 32</td>
+                    <td>2</td>
+                    <td id="D2_95"></td>
+                    <td id="D1_95"></td>
+                    <td id="H_95"><td>
+                    <td>M 33</td>
+                    <td>1.5</td>
+                    <td id="D2_96"></td>
+                    <td id="D1_96"></td>
+                    <td id="H_96"></td>
+                </tr>
+                <tr>
+                    <td>M 33</td>
+                    <td>2</td>
+                    <td id="D2_97"></td>
+                    <td id="D1_97"></td>
+                    <td id="H_97"><td>
+                    <td>M 33</td>
+                    <td>3</td>
+                    <td id="D2_98"></td>
+                    <td id="D1_98"></td>
+                    <td id="H_98"></td>
+                </tr>
+                <tr>
+                    <td>M 33</td>
+                    <td>3.5</td>
+                    <td id="D2_99"></td>
+                    <td id="D1_99"></td>
+                    <td id="H_99"><td>
+                    <td>M 35</td>
+                    <td>1.5</td>
+                    <td id="D2_100"></td>
+                    <td id="D1_100"></td>
+                    <td id="H_100"></td>
+                </tr>
+                <tr>
+                    <td>M 36</td>
+                    <td>1.5</td>
+                    <td id="D2_101"></td>
+                    <td id="D1_101"></td>
+                    <td id="H_101"><td>
+                    <td>M 36</td>
+                    <td>2</td>
+                    <td id="D2_102"></td>
+                    <td id="D1_102"></td>
+                    <td id="H_102"></td>
+                </tr>
+                <tr>
+                    <td>M 36</td>
+                    <td>3</td>
+                    <td id="D2_103"></td>
+                    <td id="D1_103"></td>
+                    <td id="H_103"><td>
+                    <td>M 36</td>
+                    <td>4</td>
+                    <td id="D2_104"></td>
+                    <td id="D1_104"></td>
+                    <td id="H_104"></td>
+                </tr>
+                <tr>
+                    <td>M 38</td>
+                    <td>1.5</td>
+                    <td id="D2_105"></td>
+                    <td id="D1_105"></td>
+                    <td id="H_105"><td>
+                    <td>M 39</td>
+                    <td>1.5</td>
+                    <td id="D2_106"></td>
+                    <td id="D1_106"></td>
+                    <td id="H_106"></td>
+                </tr>
+                <tr>
+                    <td>M 39</td>
+                    <td>2</td>
+                    <td id="D2_107"></td>
+                    <td id="D1_107"></td>
+                    <td id="H_107"><td>
+                    <td>M 39</td>
+                    <td>3</td>
+                    <td id="D2_108"></td>
+                    <td id="D1_108"></td>
+                    <td id="H_108"></td>
+                </tr>
+                <tr>
+                    <td>M 39</td>
+                    <td>4</td>
+                    <td id="D2_109"></td>
+                    <td id="D1_109"></td>
+                    <td id="H_109"><td>
+                    <td>M 40</td>
+                    <td>1.5</td>
+                    <td id="D2_110"></td>
+                    <td id="D1_110"></td>
+                    <td id="H_110"></td>
+                </tr>
+                <tr>
+                    <td>M 40</td>
+                    <td>2</td>
+                    <td id="D2_111"></td>
+                    <td id="D1_111"></td>
+                    <td id="H_111"><td>
+                    <td>M 40</td>
+                    <td>3</td>
+                    <td id="D2_112"></td>
+                    <td id="D1_112"></td>
+                    <td id="H_112"></td>
+                </tr>
+                <tr>
+                    <td>M 42</td>
+                    <td>1.5</td>
+                    <td id="D2_113"></td>
+                    <td id="D1_113"></td>
+                    <td id="H_113"><td>
+                    <td>M 42</td>
+                    <td>2</td>
+                    <td id="D2_114"></td>
+                    <td id="D1_114"></td>
+                    <td id="H_114"></td>
+                </tr>
+                <tr>
+                    <td>M 42</td>
+                    <td>3</td>
+                    <td id="D2_115"></td>
+                    <td id="D1_115"></td>
+                    <td id="H_115"><td>
+                    <td>M 42</td>
+                    <td>4</td>
+                    <td id="D2_116"></td>
+                    <td id="D1_116"></td>
+                    <td id="H_116"></td>
+                </tr>
+                <tr>
+                    <td>M 42</td>
+                    <td>4.5</td>
+                    <td id="D2_117"></td>
+                    <td id="D1_117"></td>
+                    <td id="H_117"><td>
+                    <td>M 45</td>
+                    <td>1.5</td>
+                    <td id="D2_118"></td>
+                    <td id="D1_118"></td>
+                    <td id="H_118"></td>
+                </tr>
+                <tr>
+                    <td>M 45</td>
+                    <td>2</td>
+                    <td id="D2_119"></td>
+                    <td id="D1_119"></td>
+                    <td id="H_119"><td>
+                    <td>M 45</td>
+                    <td>3</td>
+                    <td id="D2_120"></td>
+                    <td id="D1_120"></td>
+                    <td id="H_120"></td>
+                </tr>
+                <tr>
+                    <td>M 45</td>
+                    <td>4</td>
+                    <td id="D2_121"></td>
+                    <td id="D1_121"></td>
+                    <td id="H_121"><td>
+                    <td>M 45</td>
+                    <td>4.5</td>
+                    <td id="D2_122"></td>
+                    <td id="D1_122"></td>
+                    <td id="H_122"></td>
+                </tr>
+                <tr>
+                    <td>M 48</td>
+                    <td>1.5</td>
+                    <td id="D2_123"></td>
+                    <td id="D1_123"></td>
+                    <td id="H_123"><td>
+                    <td>M 48</td>
+                    <td>2</td>
+                    <td id="D2_124"></td>
+                    <td id="D1_124"></td>
+                    <td id="H_124"></td>
+                </tr>
+                <tr>
+                    <td>M 48</td>
+                    <td>3</td>
+                    <td id="D2_125"></td>
+                    <td id="D1_125"></td>
+                    <td id="H_125"><td>
+                    <td>M 48</td>
+                    <td>4</td>
+                    <td id="D2_126"></td>
+                    <td id="D1_126"></td>
+                    <td id="H_126"></td>
+                </tr>
+                <tr>
+                    <td>M 48</td>
+                    <td>5</td>
+                    <td id="D2_127"></td>
+                    <td id="D1_127"></td>
+                    <td id="H_127"><td>
+                    <td>M 50</td>
+                    <td>1.5</td>
+                    <td id="D2_128"></td>
+                    <td id="D1_128"></td>
+                    <td id="H_128"></td>
+                </tr>
+                <tr>
+                    <td>M 50</td>
+                    <td>2</td>
+                    <td id="D2_129"></td>
+                    <td id="D1_129"></td>
+                    <td id="H_129"><td>
+                    <td>M 50</td>
+                    <td>3</td>
+                    <td id="D2_130"></td>
+                    <td id="D1_130"></td>
+                    <td id="H_130"></td>
+                </tr>
+                <tr>
+                    <td>M 52</td>
+                    <td>1.5</td>
+                    <td id="D2_131"></td>
+                    <td id="D1_131"></td>
+                    <td id="H_131"><td>
+                    <td>M 52</td>
+                    <td>2</td>
+                    <td id="D2_132"></td>
+                    <td id="D1_132"></td>
+                    <td id="H_132"></td>
+                </tr>
+                <tr>
+                    <td>M 52</td>
+                    <td>3</td>
+                    <td id="D2_133"></td>
+                    <td id="D1_133"></td>
+                    <td id="H_133"><td>
+                    <td>M 52</td>
+                    <td>4</td>
+                    <td id="D2_134"></td>
+                    <td id="D1_134"></td>
+                    <td id="H_134"></td>
+                </tr>
+                <tr>
+                    <td>M 52</td>
+                    <td>5</td>
+                    <td id="D2_135"></td>
+                    <td id="D1_135"></td>
+                    <td id="H_135"><td>
+                    <td>M 55</td>
+                    <td>1.5</td>
+                    <td id="D2_136"></td>
+                    <td id="D1_136"></td>
+                    <td id="H_136"></td>
+                </tr>
+                <tr>
+                    <td>M 55</td>
+                    <td>2</td>
+                    <td id="D2_137"></td>
+                    <td id="D1_137"></td>
+                    <td id="H_137"><td>
+                    <td>M 55</td>
+                    <td>3</td>
+                    <td id="D2_138"></td>
+                    <td id="D1_138"></td>
+                    <td id="H_138"></td>
+                </tr>
+                <tr>
+                    <td>M 55</td>
+                    <td>4</td>
+                    <td id="D2_139"></td>
+                    <td id="D1_139"></td>
+                    <td id="H_139"><td>
+                    <td>M 56</td>
+                    <td>1.5</td>
+                    <td id="D2_140"></td>
+                    <td id="D1_140"></td>
+                    <td id="H_140"></td>
+                </tr>
+                <tr>
+                    <td>M 56</td>
+                    <td>2</td>
+                    <td id="D2_141"></td>
+                    <td id="D1_141"></td>
+                    <td id="H_141"><td>
+                    <td>M 56</td>
+                    <td>3</td>
+                    <td id="D2_142"></td>
+                    <td id="D1_142"></td>
+                    <td id="H_142"></td>
+                </tr>
+                <tr>
+                    <td>M 56</td>
+                    <td>4</td>
+                    <td id="D2_143"></td>
+                    <td id="D1_143"></td>
+                    <td id="H_143"><td>
+                    <td>M 56</td>
+                    <td>5.5</td>
+                    <td id="D2_144"></td>
+                    <td id="D1_144"></td>
+                    <td id="H_144"></td>
+                </tr>
+                <tr>
+                    <td>M 58</td>
+                    <td>1.5</td>
+                    <td id="D2_145"></td>
+                    <td id="D1_145"></td>
+                    <td id="H_145"><td>
+                    <td>M 58</td>
+                    <td>2</td>
+                    <td id="D2_146"></td>
+                    <td id="D1_146"></td>
+                    <td id="H_146"></td>
+                </tr>
+                <tr>
+                    <td>M 58</td>
+                    <td>3</td>
+                    <td id="D2_147"></td>
+                    <td id="D1_147"></td>
+                    <td id="H_147"><td>
+                    <td>M 58</td>
+                    <td>4</td>
+                    <td id="D2_148"></td>
+                    <td id="D1_148"></td>
+                    <td id="H_148"></td>
+                </tr>
+                <tr>
+                    <td>M 60</td>
+                    <td>1.5</td>
+                    <td id="D2_149"></td>
+                    <td id="D1_149"></td>
+                    <td id="H_149"><td>
+                    <td>M 60</td>
+                    <td>2</td>
+                    <td id="D2_150"></td>
+                    <td id="D1_150"></td>
+                    <td id="H_150"></td>
+                </tr>
+                <tr>
+                    <td>M 60</td>
+                    <td>3</td>
+                    <td id="D2_151"></td>
+                    <td id="D1_151"></td>
+                    <td id="H_151"><td>
+                    <td>M 60</td>
+                    <td>4</td>
+                    <td id="D2_152"></td>
+                    <td id="D1_152"></td>
+                    <td id="H_152"></td>
+                </tr>
+                <tr>
+                    <td>M 60</td>
+                    <td>5.5</td>
+                    <td id="D2_153"></td>
+                    <td id="D1_153"></td>
+                    <td id="H_153"><td>
+                    <td>M 62</td>
+                    <td>1.5</td>
+                    <td id="D2_154"></td>
+                    <td id="D1_154"></td>
+                    <td id="H_154"></td>
+                </tr>
+                <tr>
+                    <td>M 62</td>
+                    <td>2</td>
+                    <td id="D2_155"></td>
+                    <td id="D1_155"></td>
+                    <td id="H_155"><td>
+                    <td>M 62</td>
+                    <td>3</td>
+                    <td id="D2_156"></td>
+                    <td id="D1_156"></td>
+                    <td id="H_156"></td>
+                </tr>
+                <tr>
+                    <td>M 62</td>
+                    <td>4</td>
+                    <td id="D2_157"></td>
+                    <td id="D1_157"></td>
+                    <td id="H_157"><td>
+                    <td>M 64</td>
+                    <td>1.5</td>
+                    <td id="D2_158"></td>
+                    <td id="D1_158"></td>
+                    <td id="H_158"></td>
+                </tr>
+                <tr>
+                    <td>M 64</td>
+                    <td>2</td>
+                    <td id="D2_159"></td>
+                    <td id="D1_159"></td>
+                    <td id="H_159"><td>
+                    <td>M 64</td>
+                    <td>3</td>
+                    <td id="D2_160"></td>
+                    <td id="D1_160"></td>
+                    <td id="H_160"></td>
+                </tr>
+                <tr>
+                    <td>M 64</td>
+                    <td>4</td>
+                    <td id="D2_161"></td>
+                    <td id="D1_161"></td>
+                    <td id="H_161"><td>
+                    <td>M 64</td>
+                    <td>6</td>
+                    <td id="D2_162"></td>
+                    <td id="D1_162"></td>
+                    <td id="H_162"></td>
+                </tr>
+                <tr>
+                    <td>M 65</td>
+                    <td>1.5</td>
+                    <td id="D2_163"></td>
+                    <td id="D1_163"></td>
+                    <td id="H_163"><td>
+                    <td>M 65</td>
+                    <td>2</td>
+                    <td id="D2_164"></td>
+                    <td id="D1_164"></td>
+                    <td id="H_164"></td>
+                </tr>
+                <tr>
+                    <td>M 65</td>
+                    <td>3</td>
+                    <td id="D2_165"></td>
+                    <td id="D1_165"></td>
+                    <td id="H_165"><td>
+                    <td>M 65</td>
+                    <td>4</td>
+                    <td id="D2_166"></td>
+                    <td id="D1_166"></td>
+                    <td id="H_166"></td>
+                </tr>
+                <tr>
+                    <td>M 68</td>
+                    <td>1.5</td>
+                    <td id="D2_167"></td>
+                    <td id="D1_167"></td>
+                    <td id="H_167"><td>
+                    <td>M 68</td>
+                    <td>2</td>
+                    <td id="D2_168"></td>
+                    <td id="D1_168"></td>
+                    <td id="H_168"></td>
+                </tr>
+                <tr>
+                    <td>M 68</td>
+                    <td>3</td>
+                    <td id="D2_169"></td>
+                    <td id="D1_169"></td>
+                    <td id="H_169"><td>
+                    <td>M 68</td>
+                    <td>4</td>
+                    <td id="D2_170"></td>
+                    <td id="D1_170"></td>
+                    <td id="H_170"></td>
+                </tr>
+                <tr>
+                    <td>M 68</td>
+                    <td>6</td>
+                    <td id="D2_171"></td>
+                    <td id="D1_171"></td>
+                    <td id="H_171"><td>
+                    <td>M 70</td>
+                    <td>1.5</td>
+                    <td id="D2_172"></td>
+                    <td id="D1_172"></td>
+                    <td id="H_172"></td>
+                </tr>
+                <tr>
+                    <td>M 70</td>
+                    <td>2</td>
+                    <td id="D2_173"></td>
+                    <td id="D1_173"></td>
+                    <td id="H_173"><td>
+                    <td>M 70</td>
+                    <td>3</td>
+                    <td id="D2_174"></td>
+                    <td id="D1_174"></td>
+                    <td id="H_174"></td>
+                </tr>
+                <tr>
+                    <td>M 70</td>
+                    <td>4</td>
+                    <td id="D2_175"></td>
+                    <td id="D1_175"></td>
+                    <td id="H_175"><td>
+                    <td>M 70</td>
+                    <td>6</td>
+                    <td id="D2_176"></td>
+                    <td id="D1_176"></td>
+                    <td id="H_176"></td>
+                </tr>
+                <tr>
+                    <td>M 72</td>
+                    <td>1.5</td>
+                    <td id="D2_177"></td>
+                    <td id="D1_177"></td>
+                    <td id="H_177"><td>
+                    <td>M 72</td>
+                    <td>2</td>
+                    <td id="D2_178"></td>
+                    <td id="D1_178"></td>
+                    <td id="H_178"></td>
+                </tr>
+                <tr>
+                    <td>M 72</td>
+                    <td>3</td>
+                    <td id="D2_179"></td>
+                    <td id="D1_179"></td>
+                    <td id="H_179"><td>
+                    <td>M 72</td>
+                    <td>4</td>
+                    <td id="D2_180"></td>
+                    <td id="D1_180"></td>
+                    <td id="H_180"></td>
+                </tr>
+                <tr>
+                    <td>M 72</td>
+                    <td>6</td>
+                    <td id="D2_181"></td>
+                    <td id="D1_181"></td>
+                    <td id="H_181"><td>
+                    <td>M 75</td>
+                    <td>1.5</td>
+                    <td id="D2_182"></td>
+                    <td id="D1_182"></td>
+                    <td id="H_182"></td>
+                </tr>
+                <tr>
+                    <td>M 75</td>
+                    <td>2</td>
+                    <td id="D2_183"></td>
+                    <td id="D1_183"></td>
+                    <td id="H_183"><td>
+                    <td>M 75</td>
+                    <td>3</td>
+                    <td id="D2_184"></td>
+                    <td id="D1_184"></td>
+                    <td id="H_184"></td>
+                </tr>
+                <tr>
+                    <td>M 75</td>
+                    <td>4</td>
+                    <td id="D2_185"></td>
+                    <td id="D1_185"></td>
+                    <td id="H_185"><td>
+                    <td>M 76</td>
+                    <td>1.5</td>
+                    <td id="D2_186"></td>
+                    <td id="D1_186"></td>
+                    <td id="H_186"></td>
+                </tr>
+                <tr>
+                    <td>M 76</td>
+                    <td>2</td>
+                    <td id="D2_187"></td>
+                    <td id="D1_187"></td>
+                    <td id="H_187"><td>
+                    <td>M 76</td>
+                    <td>3</td>
+                    <td id="D2_188"></td>
+                    <td id="D1_188"></td>
+                    <td id="H_188"></td>
+                </tr>
+                <tr>
+                    <td>M 76</td>
+                    <td>4</td>
+                    <td id="D2_189"></td>
+                    <td id="D1_189"></td>
+                    <td id="H_189"><td>
+                    <td>M 76</td>
+                    <td>6</td>
+                    <td id="D2_190"></td>
+                    <td id="D1_190"></td>
+                    <td id="H_190"></td>
+                </tr>
+                <tr>
+                    <td>M 78</td>
+                    <td>2</td>
+                    <td id="D2_191"></td>
+                    <td id="D1_191"></td>
+                    <td id="H_191"><td>
+                    <td>M 80</td>
+                    <td>1.5</td>
+                    <td id="D2_192"></td>
+                    <td id="D1_192"></td>
+                    <td id="H_192"></td>
+                </tr>
+                <tr>
+                    <td>M 80</td>
+                    <td>2</td>
+                    <td id="D2_193"></td>
+                    <td id="D1_193"></td>
+                    <td id="H_193"><td>
+                    <td>M 80</td>
+                    <td>3</td>
+                    <td id="D2_194"></td>
+                    <td id="D1_194"></td>
+                    <td id="H_194"></td>
+                </tr>
+                <tr>
+                    <td>M 80</td>
+                    <td>4</td>
+                    <td id="D2_195"></td>
+                    <td id="D1_195"></td>
+                    <td id="H_195"><td>
+                    <td>M 80</td>
+                    <td>6</td>
+                    <td id="D2_196"></td>
+                    <td id="D1_196"></td>
+                    <td id="H_196"></td>
+                </tr>
+                <tr>
+                    <td>M 82</td>
+                    <td>2</td>
+                    <td id="D2_197"></td>
+                    <td id="D1_197"></td>
+                    <td id="H_197"><td>
+                    <td>M 85</td>
+                    <td>2</td>
+                    <td id="D2_198"></td>
+                    <td id="D1_198"></td>
+                    <td id="H_198"></td>
+                </tr>
+                <tr>
+                    <td>M 85</td>
+                    <td>3</td>
+                    <td id="D2_199"></td>
+                    <td id="D1_199"></td>
+                    <td id="H_199"><td>
+                    <td>M 85</td>
+                    <td>4</td>
+                    <td id="D2_200"></td>
+                    <td id="D1_200"></td>
+                    <td id="H_200"></td>
+                </tr>
+                <tr>
+                    <td>M 85</td>
+                    <td>6</td>
+                    <td id="D2_201"></td>
+                    <td id="D1_201"></td>
+                    <td id="H_201"><td>
+                    <td>M 90</td>
+                    <td>2</td>
+                    <td id="D2_202"></td>
+                    <td id="D1_202"></td>
+                    <td id="H_202"></td>
+                </tr>
+                <tr>
+                    <td>M 90</td>
+                    <td>3</td>
+                    <td id="D2_203"></td>
+                    <td id="D1_203"></td>
+                    <td id="H_203"><td>
+                    <td>M 90</td>
+                    <td>4</td>
+                    <td id="D2_204"></td>
+                    <td id="D1_204"></td>
+                    <td id="H_204"></td>
+                </tr>
+                <tr>
+                    <td>M 90</td>
+                    <td>6</td>
+                    <td id="D2_205"></td>
+                    <td id="D1_205"></td>
+                    <td id="H_205"><td>
+                    <td>M 95</td>
+                    <td>2</td>
+                    <td id="D2_206"></td>
+                    <td id="D1_206"></td>
+                    <td id="H_206"></td>
+                </tr>
+                <tr>
+                    <td>M 95</td>
+                    <td>3</td>
+                    <td id="D2_207"></td>
+                    <td id="D1_207"></td>
+                    <td id="H_207"><td>
+                    <td>M 95</td>
+                    <td>4</td>
+                    <td id="D2_208"></td>
+                    <td id="D1_208"></td>
+                    <td id="H_208"></td>
+                </tr>
+                <tr>
+                    <td>M 95</td>
+                    <td>6</td>
+                    <td id="D2_209"></td>
+                    <td id="D1_209"></td>
+                    <td id="H_209"><td>
+                    <td>M 100</td>
+                    <td>2</td>
+                    <td id="D2_210"></td>
+                    <td id="D1_210"></td>
+                    <td id="H_210"></td>
+                </tr>
+                <tr>
+                    <td>M 100</td>
+                    <td>3</td>
+                    <td id="D2_211"></td>
+                    <td id="D1_211"></td>
+                    <td id="H_211"><td>
+                    <td>M 100</td>
+                    <td>4</td>
+                    <td id="D2_212"></td>
+                    <td id="D1_212"></td>
+                    <td id="H_212"></td>
+                </tr>
+                <tr>
+                    <td>M 100</td>
+                    <td>6</td>
+                    <td id="D2_213"></td>
+                    <td id="D1_213"></td>
+                    <td id="H_213"><td>
+                    <td>M 105</td>
+                    <td>2</td>
+                    <td id="D2_214"></td>
+                    <td id="D1_214"></td>
+                    <td id="H_214"></td>
+                </tr>
+                <tr>
+                    <td>M 105</td>
+                    <td>3</td>
+                    <td id="D2_215"></td>
+                    <td id="D1_215"></td>
+                    <td id="H_215"><td>
+                    <td>M 105</td>
+                    <td>4</td>
+                    <td id="D2_216"></td>
+                    <td id="D1_216"></td>
+                    <td id="H_216"></td>
+                </tr>
+                <tr>
+                    <td>M 105</td>
+                    <td>6</td>
+                    <td id="D2_217"></td>
+                    <td id="D1_217"></td>
+                    <td id="H_217"><td>
+                    <td>M 110</td>
+                    <td>2</td>
+                    <td id="D2_218"></td>
+                    <td id="D1_218"></td>
+                    <td id="H_218"></td>
+                </tr>
+                <tr>
+                    <td>M 110</td>
+                    <td>3</td>
+                    <td id="D2_219"></td>
+                    <td id="D1_219"></td>
+                    <td id="H_219"><td>
+                    <td>M 110</td>
+                    <td>4</td>
+                    <td id="D2_220"></td>
+                    <td id="D1_220"></td>
+                    <td id="H_220"></td>
+                </tr>
+                <tr>
+                    <td>M 110</td>
+                    <td>6</td>
+                    <td id="D2_221"></td>
+                    <td id="D1_221"></td>
+                    <td id="H_221"><td>
+                    <td>M 115</td>
+                    <td>2</td>
+                    <td id="D2_222"></td>
+                    <td id="D1_222"></td>
+                    <td id="H_222"></td>
+                </tr>
+                <tr>
+                    <td>M 115</td>
+                    <td>3</td>
+                    <td id="D2_223"></td>
+                    <td id="D1_223"></td>
+                    <td id="H_223"><td>
+                    <td>M 115</td>
+                    <td>4</td>
+                    <td id="D2_224"></td>
+                    <td id="D1_224"></td>
+                    <td id="H_224"></td>
+                </tr>
+                <tr>
+                    <td>M 115</td>
+                    <td>6</td>
+                    <td id="D2_225"></td>
+                    <td id="D1_225"></td>
+                    <td id="H_225"><td>
+                    <td>M 120</td>
+                    <td>2</td>
+                    <td id="D2_226"></td>
+                    <td id="D1_226"></td>
+                    <td id="H_226"></td>
+                </tr>
+                <tr>
+                    <td>M 120</td>
+                    <td>3</td>
+                    <td id="D2_227"></td>
+                    <td id="D1_227"></td>
+                    <td id="H_227"><td>
+                    <td>M 120</td>
+                    <td>4</td>
+                    <td id="D2_228"></td>
+                    <td id="D1_228"></td>
+                    <td id="H_228"></td>
+                </tr>
+                <tr>
+                    <td>M 120</td>
+                    <td>6</td>
+                    <td id="D2_229"></td>
+                    <td id="D1_229"></td>
+                    <td id="H_229"><td>
+                    <td>M 125</td>
+                    <td>2</td>
+                    <td id="D2_230"></td>
+                    <td id="D1_230"></td>
+                    <td id="H_230"></td>
+                </tr>
+                <tr>
+                    <td>M 125</td>
+                    <td>3</td>
+                    <td id="D2_231"></td>
+                    <td id="D1_231"></td>
+                    <td id="H_231"><td>
+                    <td>M 125</td>
+                    <td>4</td>
+                    <td id="D2_232"></td>
+                    <td id="D1_232"></td>
+                    <td id="H_232"></td>
+                </tr>
+                <tr>
+                    <td>M 125</td>
+                    <td>6</td>
+                    <td id="D2_233"></td>
+                    <td id="D1_233"></td>
+                    <td id="H_233"><td>
+                    <td>M 130</td>
+                    <td>2</td>
+                    <td id="D2_234"></td>
+                    <td id="D1_234"></td>
+                    <td id="H_234"></td>
+                </tr>
+                <tr>
+                    <td>M 130</td>
+                    <td>3</td>
+                    <td id="D2_235"></td>
+                    <td id="D1_235"></td>
+                    <td id="H_235"><td>
+                    <td>M 130</td>
+                    <td>4</td>
+                    <td id="D2_236"></td>
+                    <td id="D1_236"></td>
+                    <td id="H_236"></td>
+                </tr>
+                <tr>
+                    <td>M 130</td>
+                    <td>6</td>
+                    <td id="D2_237"></td>
+                    <td id="D1_237"></td>
+                    <td id="H_237"><td>
+                    <td>M 135</td>
+                    <td>2</td>
+                    <td id="D2_238"></td>
+                    <td id="D1_238"></td>
+                    <td id="H_238"></td>
+                </tr>
+                <tr>
+                    <td>M 135</td>
+                    <td>3</td>
+                    <td id="D2_239"></td>
+                    <td id="D1_239"></td>
+                    <td id="H_239"><td>
+                    <td>M 135</td>
+                    <td>4</td>
+                    <td id="D2_240"></td>
+                    <td id="D1_240"></td>
+                    <td id="H_240"></td>
+                </tr>
+                <tr>
+                    <td>M 135</td>
+                    <td>6</td>
+                    <td id="D2_241"></td>
+                    <td id="D1_241"></td>
+                    <td id="H_241"><td>
+                    <td>M 140</td>
+                    <td>2</td>
+                    <td id="D2_242"></td>
+                    <td id="D1_242"></td>
+                    <td id="H_242"></td>
+                </tr>
+                <tr>
+                    <td>M 140</td>
+                    <td>3</td>
+                    <td id="D2_243"></td>
+                    <td id="D1_243"></td>
+                    <td id="H_243"><td>
+                    <td>M 140</td>
+                    <td>4</td>
+                    <td id="D2_244"></td>
+                    <td id="D1_244"></td>
+                    <td id="H_244"></td>
+                </tr>
+                <tr>
+                    <td>M 140</td>
+                    <td>6</td>
+                    <td id="D2_245"></td>
+                    <td id="D1_245"></td>
+                    <td id="H_245"><td>
+                    <td>M 145</td>
+                    <td>2</td>
+                    <td id="D2_246"></td>
+                    <td id="D1_246"></td>
+                    <td id="H_246"></td>
+                </tr>
+                <tr>
+                    <td>M 145</td>
+                    <td>3</td>
+                    <td id="D2_247"></td>
+                    <td id="D1_247"></td>
+                    <td id="H_247"><td>
+                    <td>M 145</td>
+                    <td>4</td>
+                    <td id="D2_248"></td>
+                    <td id="D1_248"></td>
+                    <td id="H_248"></td>
+                </tr>
+                <tr>
+                    <td>M 145</td>
+                    <td>6</td>
+                    <td id="D2_249"></td>
+                    <td id="D1_249"></td>
+                    <td id="H_249"><td>
+                    <td>M 150</td>
+                    <td>2</td>
+                    <td id="D2_250"></td>
+                    <td id="D1_250"></td>
+                    <td id="H_250"></td>
+                </tr>
+                <tr>
+                    <td>M 150</td>
+                    <td>3</td>
+                    <td id="D2_251"></td>
+                    <td id="D1_251"></td>
+                    <td id="H_251"><td>
+                    <td>M 150</td>
+                    <td>4</td>
+                    <td id="D2_252"></td>
+                    <td id="D1_252"></td>
+                    <td id="H_252"></td>
+                </tr>
+                <tr>
+                    <td>M 150</td>
+                    <td>6</td>
+                    <td id="D2_253"></td>
+                    <td id="D1_253"></td>
+                    <td id="H_253"><td>
+                    <td>M 150</td>
+                    <td>8</td>
+                    <td id="D2_254"></td>
+                    <td id="D1_254"></td>
+                    <td id="H_254"></td>
+                </tr>
+                <tr>
+                    <td>M 155</td>
+                    <td>3</td>
+                    <td id="D2_255"></td>
+                    <td id="D1_255"></td>
+                    <td id="H_255"><td>
+                    <td>M 155</td>
+                    <td>4</td>
+                    <td id="D2_256"></td>
+                    <td id="D1_256"></td>
+                    <td id="H_256"></td>
+                </tr>
+                <tr>
+                    <td>M 155</td>
+                    <td>6</td>
+                    <td id="D2_257"></td>
+                    <td id="D1_257"></td>
+                    <td id="H_257"><td>
+                    <td>M 160</td>
+                    <td>3</td>
+                    <td id="D2_258"></td>
+                    <td id="D1_258"></td>
+                    <td id="H_258"></td>
+                </tr>
+                <tr>
+                    <td>M 160</td>
+                    <td>4</td>
+                    <td id="D2_259"></td>
+                    <td id="D1_259"></td>
+                    <td id="H_259"><td>
+                    <td>M 160</td>
+                    <td>6</td>
+                    <td id="D2_260"></td>
+                    <td id="D1_260"></td>
+                    <td id="H_260"></td>
+                </tr>
+                <tr>
+                    <td>M 160</td>
+                    <td>8</td>
+                    <td id="D2_261"></td>
+                    <td id="D1_261"></td>
+                    <td id="H_261"><td>
+                    <td>M 165</td>
+                    <td>3</td>
+                    <td id="D2_262"></td>
+                    <td id="D1_262"></td>
+                    <td id="H_262"></td>
+                </tr>
+                <tr>
+                    <td>M 165</td>
+                    <td>4</td>
+                    <td id="D2_263"></td>
+                    <td id="D1_263"></td>
+                    <td id="H_263"><td>
+                    <td>M 165</td>
+                    <td>6</td>
+                    <td id="D2_264"></td>
+                    <td id="D1_264"></td>
+                    <td id="H_264"></td>
+                </tr>
+                <tr>
+                    <td>M 170</td>
+                    <td>3</td>
+                    <td id="D2_265"></td>
+                    <td id="D1_265"></td>
+                    <td id="H_265"><td>
+                    <td>M 170</td>
+                    <td>4</td>
+                    <td id="D2_266"></td>
+                    <td id="D1_266"></td>
+                    <td id="H_266"></td>
+                </tr>
+                <tr>
+                    <td>M 170</td>
+                    <td>6</td>
+                    <td id="D2_267"></td>
+                    <td id="D1_267"></td>
+                    <td id="H_267"><td>
+                    <td>M 170</td>
+                    <td>8</td>
+                    <td id="D2_268"></td>
+                    <td id="D1_268"></td>
+                    <td id="H_268"></td>
+                </tr>
+                <tr>
+                    <td>M 175</td>
+                    <td>3</td>
+                    <td id="D2_269"></td>
+                    <td id="D1_269"></td>
+                    <td id="H_269"><td>
+                    <td>M 175</td>
+                    <td>4</td>
+                    <td id="D2_270"></td>
+                    <td id="D1_270"></td>
+                    <td id="H_270"></td>
+                </tr>
+                <tr>
+                    <td>M 175</td>
+                    <td>6</td>
+                    <td id="D2_271"></td>
+                    <td id="D1_271"></td>
+                    <td id="H_271"><td>
+                    <td>M 180</td>
+                    <td>3</td>
+                    <td id="D2_272"></td>
+                    <td id="D1_272"></td>
+                    <td id="H_272"></td>
+                </tr>
+                <tr>
+                    <td>M 180</td>
+                    <td>4</td>
+                    <td id="D2_273"></td>
+                    <td id="D1_273"></td>
+                    <td id="H_273"><td>
+                    <td>M 180</td>
+                    <td>6</td>
+                    <td id="D2_274"></td>
+                    <td id="D1_274"></td>
+                    <td id="H_274"></td>
+                </tr>
+                <tr>
+                    <td>M 180</td>
+                    <td>8</td>
+                    <td id="D2_275"></td>
+                    <td id="D1_275"></td>
+                    <td id="H_275"><td>
+                    <td>M 185</td>
+                    <td>3</td>
+                    <td id="D2_276"></td>
+                    <td id="D1_276"></td>
+                    <td id="H_276"></td>
+                </tr>
+                <tr>
+                    <td>M 185</td>
+                    <td>4</td>
+                    <td id="D2_277"></td>
+                    <td id="D1_277"></td>
+                    <td id="H_277"><td>
+                    <td>M 185</td>
+                    <td>6</td>
+                    <td id="D2_278"></td>
+                    <td id="D1_278"></td>
+                    <td id="H_278"></td>
+                </tr>
+                <tr>
+                    <td>M 190</td>
+                    <td>3</td>
+                    <td id="D2_279"></td>
+                    <td id="D1_279"></td>
+                    <td id="H_279"><td>
+                    <td>M 190</td>
+                    <td>4</td>
+                    <td id="D2_280"></td>
+                    <td id="D1_280"></td>
+                    <td id="H_280"></td>
+                </tr>
+                <tr>
+                    <td>M 190</td>
+                    <td>6</td>
+                    <td id="D2_281"></td>
+                    <td id="D1_281"></td>
+                    <td id="H_281"><td>
+                    <td>M 190</td>
+                    <td>8</td>
+                    <td id="D2_282"></td>
+                    <td id="D1_282"></td>
+                    <td id="H_282"></td>
+                </tr>
+                <tr>
+                    <td>M 195</td>
+                    <td>3</td>
+                    <td id="D2_283"></td>
+                    <td id="D1_283"></td>
+                    <td id="H_283"><td>
+                    <td>M 195</td>
+                    <td>4</td>
+                    <td id="D2_284"></td>
+                    <td id="D1_284"></td>
+                    <td id="H_284"></td>
+                </tr>
+                <tr>
+                    <td>M 195</td>
+                    <td>6</td>
+                    <td id="D2_285"></td>
+                    <td id="D1_285"></td>
+                    <td id="H_285"><td>
+                    <td>M 200</td>
+                    <td>3</td>
+                    <td id="D2_286"></td>
+                    <td id="D1_286"></td>
+                    <td id="H_286"></td>
+                </tr>
+                <tr>
+                    <td>M 200</td>
+                    <td>4</td>
+                    <td id="D2_287"></td>
+                    <td id="D1_287"></td>
+                    <td id="H_287"><td>
+                    <td>M 200</td>
+                    <td>6</td>
+                    <td id="D2_288"></td>
+                    <td id="D1_288"></td>
+                    <td id="H_288"></td>
+                </tr>
+                <tr>
+                    <td>M 200</td>
+                    <td>8</td>
+                    <td id="D2_289"></td>
+                    <td id="D1_289"></td>
+                    <td id="H_289"><td>
+                    <td>M 205</td>
+                    <td>3</td>
+                    <td id="D2_290"></td>
+                    <td id="D1_290"></td>
+                    <td id="H_290"></td>
+                </tr>
+                <tr>
+                    <td>M 205</td>
+                    <td>4</td>
+                    <td id="D2_291"></td>
+                    <td id="D1_291"></td>
+                    <td id="H_291"><td>
+                    <td>M 205</td>
+                    <td>6</td>
+                    <td id="D2_292"></td>
+                    <td id="D1_292"></td>
+                    <td id="H_292"></td>
+                </tr>
+                <tr>
+                    <td>M 210</td>
+                    <td>3</td>
+                    <td id="D2_293"></td>
+                    <td id="D1_293"></td>
+                    <td id="H_293"><td>
+                    <td>M 210</td>
+                    <td>4</td>
+                    <td id="D2_294"></td>
+                    <td id="D1_294"></td>
+                    <td id="H_294"></td>
+                </tr>
+                <tr>
+                    <td>M 210</td>
+                    <td>6</td>
+                    <td id="D2_295"></td>
+                    <td id="D1_295"></td>
+                    <td id="H_295"><td>
+                    <td>M 210</td>
+                    <td>8</td>
+                    <td id="D2_296"></td>
+                    <td id="D1_296"></td>
+                    <td id="H_296"></td>
+                </tr>
+                <tr>
+                    <td>M 215</td>
+                    <td>3</td>
+                    <td id="D2_297"></td>
+                    <td id="D1_297"></td>
+                    <td id="H_297"><td>
+                    <td>M 215</td>
+                    <td>4</td>
+                    <td id="D2_298"></td>
+                    <td id="D1_298"></td>
+                    <td id="H_298"></td>
+                </tr>
+                <tr>
+                    <td>M 215</td>
+                    <td>6</td>
+                    <td id="D2_299"></td>
+                    <td id="D1_299"></td>
+                    <td id="H_299"><td>
+                    <td>M 220</td>
+                    <td>3</td>
+                    <td id="D2_300"></td>
+                    <td id="D1_300"></td>
+                    <td id="H_300"></td>
+                </tr>
+                <tr>
+                    <td>M 220</td>
+                    <td>4</td>
+                    <td id="D2_301"></td>
+                    <td id="D1_301"></td>
+                    <td id="H_301"><td>
+                    <td>M 220</td>
+                    <td>6</td>
+                    <td id="D2_302"></td>
+                    <td id="D1_302"></td>
+                    <td id="H_302"></td>
+                </tr>
+                <tr>
+                    <td>M 220</td>
+                    <td>8</td>
+                    <td id="D2_303"></td>
+                    <td id="D1_303"></td>
+                    <td id="H_303"><td>
+                    <td>M 225</td>
+                    <td>3</td>
+                    <td id="D2_304"></td>
+                    <td id="D1_304"></td>
+                    <td id="H_304"></td>
+                </tr>
+                <tr>
+                    <td>M 225</td>
+                    <td>4</td>
+                    <td id="D2_305"></td>
+                    <td id="D1_305"></td>
+                    <td id="H_305"><td>
+                    <td>M 225</td>
+                    <td>6</td>
+                    <td id="D2_306"></td>
+                    <td id="D1_306"></td>
+                    <td id="H_306"></td>
+                </tr>
+                <tr>
+                    <td>M 230</td>
+                    <td>3</td>
+                    <td id="D2_307"></td>
+                    <td id="D1_307"></td>
+                    <td id="H_307"><td>
+                    <td>M 230</td>
+                    <td>4</td>
+                    <td id="D2_308"></td>
+                    <td id="D1_308"></td>
+                    <td id="H_308"></td>
+                </tr>
+                <tr>
+                    <td>M 230</td>
+                    <td>6</td>
+                    <td id="D2_309"></td>
+                    <td id="D1_309"></td>
+                    <td id="H_309"><td>
+                    <td>M 230</td>
+                    <td>8</td>
+                    <td id="D2_310"></td>
+                    <td id="D1_310"></td>
+                    <td id="H_310"></td>
+                </tr>
+                <tr>
+                    <td>M 235</td>
+                    <td>3</td>
+                    <td id="D2_311"></td>
+                    <td id="D1_311"></td>
+                    <td id="H_311"><td>
+                    <td>M 235</td>
+                    <td>4</td>
+                    <td id="D2_312"></td>
+                    <td id="D1_312"></td>
+                    <td id="H_312"></td>
+                </tr>
+                <tr>
+                    <td>M 235</td>
+                    <td>6</td>
+                    <td id="D2_313"></td>
+                    <td id="D1_313"></td>
+                    <td id="H_313"><td>
+                    <td>M 240</td>
+                    <td>3</td>
+                    <td id="D2_314"></td>
+                    <td id="D1_314"></td>
+                    <td id="H_314"></td>
+                </tr>
+                <tr>
+                    <td>M 240</td>
+                    <td>4</td>
+                    <td id="D2_315"></td>
+                    <td id="D1_315"></td>
+                    <td id="H_315"><td>
+                    <td>M 240</td>
+                    <td>6</td>
+                    <td id="D2_316"></td>
+                    <td id="D1_316"></td>
+                    <td id="H_316"></td>
+                </tr>
+                <tr>
+                    <td>M 240</td>
+                    <td>8</td>
+                    <td id="D2_317"></td>
+                    <td id="D1_317"></td>
+                    <td id="H_317"><td>
+                    <td>M 245</td>
+                    <td>3</td>
+                    <td id="D2_318"></td>
+                    <td id="D1_318"></td>
+                    <td id="H_318"></td>
+                </tr>
+                <tr>
+                    <td>M 245</td>
+                    <td>4</td>
+                    <td id="D2_319"></td>
+                    <td id="D1_319"></td>
+                    <td id="H_319"><td>
+                    <td>M 245</td>
+                    <td>6</td>
+                    <td id="D2_320"></td>
+                    <td id="D1_320"></td>
+                    <td id="H_320"></td>
+                </tr>
+                <tr>
+                    <td>M 250</td>
+                    <td>3</td>
+                    <td id="D2_321"></td>
+                    <td id="D1_321"></td>
+                    <td id="H_321"><td>
+                    <td>M 250</td>
+                    <td>4</td>
+                    <td id="D2_322"></td>
+                    <td id="D1_322"></td>
+                    <td id="H_322"></td>
+                </tr>
+                <tr>
+                    <td>M 250</td>
+                    <td>6</td>
+                    <td id="D2_323"></td>
+                    <td id="D1_323"></td>
+                    <td id="H_323"><td>
+                    <td>M 250</td>
+                    <td>8</td>
+                    <td id="D2_324"></td>
+                    <td id="D1_324"></td>
+                    <td id="H_324"></td>
+                </tr>
+                <tr>
+                    <td>M 255</td>
+                    <td>4</td>
+                    <td id="D2_325"></td>
+                    <td id="D1_325"></td>
+                    <td id="H_325"><td>
+                    <td>M 255</td>
+                    <td>6</td>
+                    <td id="D2_326"></td>
+                    <td id="D1_326"></td>
+                    <td id="H_326"></td>
+                </tr>
+                <tr>
+                    <td>M 260</td>
+                    <td>4</td>
+                    <td id="D2_327"></td>
+                    <td id="D1_327"></td>
+                    <td id="H_327"><td>
+                    <td>M 260</td>
+                    <td>6</td>
+                    <td id="D2_328"></td>
+                    <td id="D1_328"></td>
+                    <td id="H_328"></td>
+                </tr>
+                <tr>
+                    <td>M 260</td>
+                    <td>8</td>
+                    <td id="D2_329"></td>
+                    <td id="D1_329"></td>
+                    <td id="H_329"><td>
+                    <td>M 265</td>
+                    <td>4</td>
+                    <td id="D2_330"></td>
+                    <td id="D1_330"></td>
+                    <td id="H_330"></td>
+                </tr>
+                <tr>
+                    <td>M 265</td>
+                    <td>6</td>
+                    <td id="D2_331"></td>
+                    <td id="D1_331"></td>
+                    <td id="H_331"><td>
+                    <td>M 270</td>
+                    <td>4</td>
+                    <td id="D2_332"></td>
+                    <td id="D1_332"></td>
+                    <td id="H_332"></td>
+                </tr>
+                <tr>
+                    <td>M 270</td>
+                    <td>6</td>
+                    <td id="D2_333"></td>
+                    <td id="D1_333"></td>
+                    <td id="H_333"><td>
+                    <td>M 270</td>
+                    <td>8</td>
+                    <td id="D2_334"></td>
+                    <td id="D1_334"></td>
+                    <td id="H_334"></td>
+                </tr>
+                <tr>
+                    <td>M 275</td>
+                    <td>4</td>
+                    <td id="D2_335"></td>
+                    <td id="D1_335"></td>
+                    <td id="H_335"><td>
+                    <td>M 275</td>
+                    <td>6</td>
+                    <td id="D2_336"></td>
+                    <td id="D1_336"></td>
+                    <td id="H_336"></td>
+                </tr>
+                <tr>
+                    <td>M 280</td>
+                    <td>4</td>
+                    <td id="D2_337"></td>
+                    <td id="D1_337"></td>
+                    <td id="H_337"><td>
+                    <td>M 280</td>
+                    <td>6</td>
+                    <td id="D2_338"></td>
+                    <td id="D1_338"></td>
+                    <td id="H_338"></td>
+                </tr>
+                <tr>
+                    <td>M 280</td>
+                    <td>8</td>
+                    <td id="D2_339"></td>
+                    <td id="D1_339"></td>
+                    <td id="H_339"><td>
+                    <td>M 285</td>
+                    <td>4</td>
+                    <td id="D2_340"></td>
+                    <td id="D1_340"></td>
+                    <td id="H_340"></td>
+                </tr>
+                <tr>
+                    <td>M 285</td>
+                    <td>6</td>
+                    <td id="D2_341"></td>
+                    <td id="D1_341"></td>
+                    <td id="H_341"><td>
+                    <td>M 290</td>
+                    <td>4</td>
+                    <td id="D2_342"></td>
+                    <td id="D1_342"></td>
+                    <td id="H_342"></td>
+                </tr>
+                <tr>
+                    <td>M 290</td>
+                    <td>6</td>
+                    <td id="D2_343"></td>
+                    <td id="D1_343"></td>
+                    <td id="H_343"><td>
+                    <td>M 290</td>
+                    <td>8</td>
+                    <td id="D2_344"></td>
+                    <td id="D1_344"></td>
+                    <td id="H_344"></td>
+                </tr>
+                <tr>
+                    <td>M 295</td>
+                    <td>4</td>
+                    <td id="D2_345"></td>
+                    <td id="D1_345"></td>
+                    <td id="H_345"><td>
+                    <td>M 295</td>
+                    <td>6</td>
+                    <td id="D2_346"></td>
+                    <td id="D1_346"></td>
+                    <td id="H_346"></td>
+                </tr>
+                <tr>
+                    <td>M 300</td>
+                    <td>4</td>
+                    <td id="D2_347"></td>
+                    <td id="D1_347"></td>
+                    <td id="H_347"><td>
+                    <td>M 300</td>
+                    <td>6</td>
+                    <td id="D2_348"></td>
+                    <td id="D1_348"></td>
+                    <td id="H_348"></td>
+                </tr>
+                <tr>
+                    <td>M 300</td>
+                    <td>8</td>
+                    <td id="D2_349"></td>
+                    <td id="D1_349"></td>
+                    <td id="H_349"><td>
+                    <td>M 310</td>
+                    <td>4</td>
+                    <td id="D2_350"></td>
+                    <td id="D1_350"></td>
+                    <td id="H_350"></td>
+                </tr>
+                <tr>
+                    <td>M 310</td>
+                    <td>6</td>
+                    <td id="D2_351"></td>
+                    <td id="D1_351"></td>
+                    <td id="H_351"><td>
+                    <td>M 320</td>
+                    <td>4</td>
+                    <td id="D2_352"></td>
+                    <td id="D1_352"></td>
+                    <td id="H_352"></td>
+                </tr>
+                <tr>
+                    <td>M 320</td>
+                    <td>6</td>
+                    <td id="D2_353"></td>
+                    <td id="D1_353"></td>
+                    <td id="H_353"><td>
+                    <td>M 330</td>
+                    <td>4</td>
+                    <td id="D2_354"></td>
+                    <td id="D1_354"></td>
+                    <td id="H_354"></td>
+                </tr>
+                <tr>
+                    <td>M 330</td>
+                    <td>6</td>
+                    <td id="D2_355"></td>
+                    <td id="D1_355"></td>
+                    <td id="H_355"><td>
+                    <td>M 340</td>
+                    <td>4</td>
+                    <td id="D2_356"></td>
+                    <td id="D1_356"></td>
+                    <td id="H_356"></td>
+                </tr>
+                <tr>
+                    <td>M 340</td>
+                    <td>6</td>
+                    <td id="D2_357"></td>
+                    <td id="D1_357"></td>
+                    <td id="H_357"><td>
+                    <td>M 350</td>
+                    <td>4</td>
+                    <td id="D2_358"></td>
+                    <td id="D1_358"></td>
+                    <td id="H_358"></td>
+                </tr>
+                <tr>
+                    <td>M 350</td>
+                    <td>6</td>
+                    <td id="D2_359"></td>
+                    <td id="D1_359"></td>
+                    <td id="H_359"><td>
+                    <td>M 360</td>
+                    <td>4</td>
+                    <td id="D2_360"></td>
+                    <td id="D1_360"></td>
+                    <td id="H_360"></td>
+                </tr>
+                <tr>
+                    <td>M 360</td>
+                    <td>6</td>
+                    <td id="D2_361"></td>
+                    <td id="D1_361"></td>
+                    <td id="H_361"><td>
+                    <td>M 370</td>
+                    <td>4</td>
+                    <td id="D2_362"></td>
+                    <td id="D1_362"></td>
+                    <td id="H_362"></td>
+                </tr>
+                <tr>
+                    <td>M 370</td>
+                    <td>6</td>
+                    <td id="D2_363"></td>
+                    <td id="D1_363"></td>
+                    <td id="H_363"><td>
+                    <td>M 380</td>
+                    <td>4</td>
+                    <td id="D2_364"></td>
+                    <td id="D1_364"></td>
+                    <td id="H_364"></td>
+                </tr>
+                <tr>
+                    <td>M 380</td>
+                    <td>6</td>
+                    <td id="D2_365"></td>
+                    <td id="D1_365"></td>
+                    <td id="H_365"><td>
+                    <td>M 390</td>
+                    <td>4</td>
+                    <td id="D2_366"></td>
+                    <td id="D1_366"></td>
+                    <td id="H_366"></td>
+                </tr>
+                <tr>
+                    <td>M 390</td>
+                    <td>6</td>
+                    <td id="D2_367"></td>
+                    <td id="D1_367"></td>
+                    <td id="H_367"><td>
+                    <td>M 400</td>
+                    <td>4</td>
+                    <td id="D2_368"></td>
+                    <td id="D1_368"></td>
+                    <td id="H_368"></td>
+                </tr>
+                <tr>
+                    <td>M 400</td>
+                    <td>6</td>
+                    <td id="D2_369"></td>
+                    <td id="D1_369"></td>
+                    <td id="H_369"><td>
+                    <td>M 410</td>
+                    <td>6</td>
+                    <td id="D2_370"></td>
+                    <td id="D1_370"></td>
+                    <td id="H_370"></td>
+                </tr>
+                <tr>
+                    <td>M 420</td>
+                    <td>6</td>
+                    <td id="D2_371"></td>
+                    <td id="D1_371"></td>
+                    <td id="H_371"><td>
+                    <td>M 430</td>
+                    <td>6</td>
+                    <td id="D2_372"></td>
+                    <td id="D1_372"></td>
+                    <td id="H_372"></td>
+                </tr>
+                <tr>
+                    <td>M 440</td>
+                    <td>6</td>
+                    <td id="D2_373"></td>
+                    <td id="D1_373"></td>
+                    <td id="H_373"><td>
+                    <td>M 450</td>
+                    <td>6</td>
+                    <td id="D2_374"></td>
+                    <td id="D1_374"></td>
+                    <td id="H_374"></td>
+                </tr>
+                <tr>
+                    <td>M 460</td>
+                    <td>6</td>
+                    <td id="D2_375"></td>
+                    <td id="D1_375"></td>
+                    <td id="H_375"><td>
+                    <td>M 470</td>
+                    <td>6</td>
+                    <td id="D2_376"></td>
+                    <td id="D1_376"></td>
+                    <td id="H_376"></td>
+                </tr>
+                <tr>
+                    <td>M 480</td>
+                    <td>6</td>
+                    <td id="D2_377"></td>
+                    <td id="D1_377"></td>
+                    <td id="H_377"><td>
+                    <td>M 490</td>
+                    <td>6</td>
+                    <td id="D2_378"></td>
+                    <td id="D1_378"></td>
+                    <td id="H_378"></td>
+                </tr>
+                <tr>
+                    <td>M 500</td>
+                    <td>6</td>
+                    <td id="D2_379"></td>
+                    <td id="D1_379"></td>
+                    <td id="H_379"><td>
+                    <td>M 510</td>
+                    <td>6</td>
+                    <td id="D2_380"></td>
+                    <td id="D1_380"></td>
+                    <td id="H_380"></td>
+                </tr>
+                <tr>
+                    <td>M 520</td>
+                    <td>6</td>
+                    <td id="D2_381"></td>
+                    <td id="D1_381"></td>
+                    <td id="H_381"><td>
+                    <td>M 530</td>
+                    <td>6</td>
+                    <td id="D2_382"></td>
+                    <td id="D1_382"></td>
+                    <td id="H_382"></td>
+                </tr>
+                <tr>
+                    <td>M 540</td>
+                    <td>6</td>
+                    <td id="D2_383"></td>
+                    <td id="D1_383"></td>
+                    <td id="H_383"><td>
+                    <td>M 550</td>
+                    <td>6</td>
+                    <td id="D2_384"></td>
+                    <td id="D1_384"></td>
+                    <td id="H_384"></td>
+                </tr>
+                <tr>
+                    <td>M 560</td>
+                    <td>6</td>
+                    <td id="D2_385"></td>
+                    <td id="D1_385"></td>
+                    <td id="H_385"><td>
+                    <td>M 570</td>
+                    <td>6</td>
+                    <td id="D2_386"></td>
+                    <td id="D1_386"></td>
+                    <td id="H_386"></td>
+                </tr>
+                <tr>
+                    <td>M 580</td>
+                    <td>6</td>
+                    <td id="D2_387"></td>
+                    <td id="D1_387"></td>
+                    <td id="H_387"><td>
+                    <td>M 590</td>
+                    <td>6</td>
+                    <td id="D2_388"></td>
+                    <td id="D1_388"></td>
+                    <td id="H_388"></td>
+                </tr>
+                <tr>
+                    <td>M 600</td>
+                    <td>6</td>
+                    <td id="D2_389"></td>
+                    <td id="D1_389"></td>
+                    <td id="H_389"><td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="session2">
+        <h2>预紧连接结合面的摩擦因数μ</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>被连接件</th>
+                    <th colspan="2">钢或铸铁零件</th> 
+                    <th colspan="3">钢结构件</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th>表面状态</th>
+                    <td>干燥的加工表面</td>
+                    <td>有油的加工表面</td>
+                    <td>喷砂处理</td>
+                    <td>涂敷锌漆</td>
+                    <td>轧制、钢刷清理表面</td>
+                </tr>
+                <tr>
+                    <th>μ 值</th>
+                    <td>0.10 ~ 0.16</td>
+                    <td>0.06 ~ 0.10</td>
+                    <td>0.45 ~ 0.55</td>
+                    <td>0.40 ~ 0.50</td>
+                    <td>0.30 ~ 0.35</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="session3">
+        <h2>底板螺栓连接结合面的许用挤压应力σ<sub>pp</sub> (MPa)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>结合面材料</th>
+                    <th>σ<sub>pp</sub></th>
+                    <th>结合面材料</th>
+                    <th>σ<sub>pp</sub></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>钢</td>
+                    <td>σ<sub>s</sub> /1.25</td>
+                    <td>混凝土</td>
+                    <td>2~3</td>
+                </tr>
+                <tr>
+                    <td>铸铁</td>
+                    <td>σ<sub>b</sub> /2~2.5</td>
+                    <td>水泥浆砖砌面</td>
+                    <td>1.2~2</td>
+                </tr>
+                <tr>
+                    <td>木材</td>
+                    <td>2~4</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="session4">
+        <h2>螺纹连接件常用材料及力学性能 (MPa)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2">钢号</th>
+                    <th rowspan="2">抗拉强度<br>σ<sub>b</sub></th>
+                    <th rowspan="2">屈服点<br>σ<sub>s</sub></th>
+                    <th colspan="2">疲劳极限</th>
+                </tr>
+                <tr>
+                    <th>拉压<br>σ<sub>-1t</sub></th>
+                    <th>弯曲<br>σ<sub>-1</sub></th>
+                </tr>
+                <tr>
+                    <th>10</th>
+                    <td>340~420</td>
+                    <td>210</td>
+                    <td>120~150</td>
+                    <td>160~220</td>
+                </tr>
+                <tr>
+                    <th>Q215-A</th>
+                    <td>340~420</td>
+                    <td>220</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>Q215-A</th>
+                    <td>410~470</td>
+                    <td>240</td>
+                    <td>120~160</td>
+                    <td>170~220</td>
+                </tr>
+                <tr>
+                    <th>35</th>
+                    <td>540</td>
+                    <td>320</td>
+                    <td>170~220</td>
+                    <td>220~300</td>
+                </tr>
+                <tr>
+                    <th>45</th>
+                    <td>610</td>
+                    <td>360</td>
+                    <td>190~250</td>
+                    <td>250~340</td>
+                </tr>
+                <tr>
+                    <th>15MnVB</th>
+                    <td>750~1000</td>
+                    <td>650~900</td>
+                    <td>240~340</td>
+                    <td>320~440</td>
+                </tr>
+                <tr>
+                    <th>30CrMnSi</th>
+                    <td>1080~1200</td>
+                    <td>900</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </thead>
+        </table>
+    </section>
+
+    <section id="session5">
+        <h2>受轴向载荷时预紧螺栓连接所需剩余预紧力及做栓连接的相对刚度系数</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>工作情况</th>
+                    <th>一般连接</th>
+                    <th>变载荷</th>
+                    <th>冲击载荷</th>
+                    <th>压力容器<br>或重要连接</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>F''值</td>
+                    <td>(0.2~0.6)F</td>
+                    <td>(0.6~1.0)F</td>
+                    <td>(1.0~1.5)F</td>
+                    <td>(1.5~1.8)F</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>垫片材料</th>
+                    <th>金属（或无垫片）</th>
+                    <th>皮革</th>
+                    <th>铜皮石棉</th>
+                    <th>橡胶</th>
+                </tr>
+                <tr>
+                    <td>C<sub>L</sub>/(C<sub>L</sub> + C<sub>F</sub>)</td>
+                    <td>0.2~0.3</td>
+                    <td>0.7</td>
+                    <td>0.8</td>
+                    <td>0.9</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="session7">
+        <h2>预紧连接的螺栓安全系数S<sub>S</sub></h2>
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2">材料种类</th>
+                    <th colspan="3">静载荷</th>
+                    <th colspan="3">变载荷</th>
+                </tr>
+                <tr>
+                    <td>M6~M16</td>
+                    <td>M16~M30</td>
+                    <td>M30~M60</td>
+                    <td>M6~M16</td>
+                    <td>M16~M30</td>
+                    <td>M30~M60</td>
+                </tr>
+                <tr>
+                    <td>碳钢</td>
+                    <td>4~3</td>
+                    <td>3~2</td>
+                    <td>2~1.3</td>
+                    <td>10~6.5</td>
+                    <td>6.5</td>
+                    <td>10~6.5</td>
+                </tr>
+                <tr>
+                    <td>合金钢</td>
+                    <td>5~4</td>
+                    <td>4~2.5</td>
+                    <td>2.5</td>
+                    <td>7.5~5</td>
+                    <td>5</td>
+                    <td>7.5~6</td>
+                </tr>
+            </thead>
+        </table>
+    </section>
+
+    <section id="session8">
+        <h2>拧紧力矩系数K</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2">摩擦表面状态</th>
+                    <th colspan="2">静加工表面</th>
+                    <th colspan="2">一般加工表面</th>
+                    <th colspan="2">表面氧化</th>
+                    <th colspan="2">表面镀锌</th>
+                    <th colspan="2">干燥粗加工表面</th>
+                </tr>
+                <tr>
+                    <td>有润滑</td>
+                    <td>无润滑</td>
+                    <td>有润滑</td>
+                    <td>无润滑</td>
+                    <td>有润滑</td>
+                    <td>无润滑</td>
+                    <td>有润滑</td>
+                    <td>无润滑</td>
+                    <td>有润滑</td>
+                    <td>无润滑</td>
+                </tr>
+                <tr>
+                    <th>K值</th>
+                    <td>0.10</td>
+                    <td>0.12</td>
+                    <td>0.13~0.15</td>
+                    <td>0.18~0.21</td>
+                    <td>0.20</td>
+                    <td>0.24</td>
+                    <td>0.18</td>
+                    <td>0.22</td>
+                    <td>——</td>
+                    <td>0.26~0.30</td>
+                </tr>
+            </thead>
+        </table>
+    </section>
+
+    <section id="session9">
+        <h2>螺栓许用应力幅计算公式<img src="{% static 'calculator/session9.png' %}" alt="세션 9"></h2>
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2">尺寸因数ε</th>
+                    <th>螺栓直径d/mm</th>
+                    <td>＜12</td>
+                    <td>16</td>
+                    <td>20</td>
+                    <td>24</td>
+                    <td>30</td>
+                    <td>36</td>
+                    <td>42</td>
+                    <td>48</td>
+                    <td>56</td>
+                    <td>64</td>
+                </tr>
+                <tr>
+                    <th>ε</th>
+                    <td>1</td>
+                    <td>0.87</td>
+                    <td>0.80</td>
+                    <td>0.74</td>
+                    <td>0.65</td>
+                    <td>0.64</td>
+                    <td>0.60</td>
+                    <td>0.57</td>
+                    <td>0.54</td>
+                    <td>0.53</td>
+                </tr>
+                <tr>
+                    <th>螺纹制造工艺因数K<sub>t</sub></th>
+                    <td colspan="11">切制螺纹K<sub>t</sub>=1, 搓制螺纹K<sub>t</sub>=1.25</td>
+                </tr>
+                <tr>
+                    <th>受力不均匀因数K<sub>u</sub></th>
+                    <td colspan="11">受压螺母K<sub>u</sub>=1, 受拉螺母K<sub>u</sub>=1.5~1.6</td>
+                </tr>
+                <tr>
+                    <th>试件的疲劳极限σ<sub>-1t</sub></th>
+                    <td colspan="11"><button class="session-button" onclick="scrollToSession(4)">螺纹连接件常用材料及力学性能 (MPa)</button></td>
+                </tr>
+                <tr>
+                    <th rowspan="2">缺口应力集中因数K<sub>σ</sub></th>
+                    <th colspan="3">螺栓材料σ<sub>B</sub>/MPa</th>
+                    <td colspan="2">400</td>
+                    <td colspan="2">600</td>
+                    <td colspan="2">800</td>
+                    <td colspan="2">1000</td>
+                </tr>
+                <tr>
+                    <th colspan="3">K<sub>σ</sub></th>
+                    <td colspan="2">3</td>
+                    <td colspan="2">3.9</td>
+                    <td colspan="2">4.8</td>
+                    <td colspan="2">5.2</td>
+                </tr>
+                <tr>
+                    <th rowspan="2">安全因数S<sub>a</sub></th>
+                    <th colspan="3">安装螺栓情况</th>
+                    <td colspan="4">控制预紧力</td>
+                    <td colspan="4">不控制预紧力</td>
+                </tr>
+                <tr>
+                    <th colspan="3">S<sub>a</sub></th>
+                    <td colspan="4">1.5~2.5</td>
+                    <td colspan="4">2.5~5</td>
+                </tr>
+            </thead>        
+        </table>
+    </section>
+    
+    <section id="session10">
+        <h2>螺栓，螺钉和螺柱的材料和力学物理性能1 (GB/T 3098.1-2010)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="3">性能等级</th>
+                    <th rowspan="3">材料和热处理</th>
+                    <th colspan="5">化学成分极限(熔炼分析％)</th>
+                    <th rowspan="3">回火温度<br>/℃<br>min</th>
+                </tr>
+                <tr>
+                    <th colspan="2">C</th>
+                    <th>P</th>
+                    <th>S</th>
+                    <th>B</th>
+                </tr>
+                <tr>
+                    <th>min</th>
+                    <th>max</th>
+                    <th>max</th>
+                    <th>max</th>
+                    <th>max</th>
+                </tr>
+                <tr>
+                    <th>4.6</th>
+                    <td rowspan="5">碳钢或添加元素的碳钢</td>
+                    <td rowspan="2">——</td>
+                    <td rowspan="2">0.55</td>
+                    <td rowspan="2">0.050</td>
+                    <td rowspan="2">0.060</td>
+                    <td rowspan="5">未规定</td>
+                    <td rowspan="5">——</td>
+                </tr>
+                <tr>
+                    <th>4.8</th>
+                </tr>
+                <tr>
+                    <th>5.6</th>
+                    <td>0.13</td>
+                    <td>0.55</td>
+                    <td>0.050</td>
+                    <td>0.060</td>
+                </tr>
+                <tr>
+                    <th>5.8</th>
+                    <td>——</td>
+                    <td>0.55</td>
+                    <td>0.050</td>
+                    <td>0.060</td>
+                </tr>
+                <tr>
+                    <th>6.8</th>
+                    <td>0.15</td>
+                    <td>0.55</td>
+                    <td>0.050</td>
+                    <td>0.060</td>
+                </tr>
+                <tr>
+                    <th rowspan="3">8.8</th>
+                    <td>添加元素的碳钢（如硼或锰或铬）淬火并回火或</td>
+                    <td>0.15</td>
+                    <td>0.40</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                    <td rowspan="3">0.003</td>
+                    <td rowspan="3">425</td>
+                </tr>
+                <tr>
+                    <td>碳钢淬火并回火或</td>
+                    <td>0.25</td>
+                    <td>0.55</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                </tr>
+                <tr>
+                    <td>合金钢淬火并回火</td>
+                    <td>0.20</td>
+                    <td>0.55</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                </tr>
+                <tr>
+                    <th rowspan="3">9.8</th>
+                    <td>添加元素的碳钢（如硼或锰或铬）淬火并回火或</td>
+                    <td>0.15</td>
+                    <td>0.40</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                    <td rowspan="3">0.003</td>
+                    <td rowspan="3">425</td>
+                </tr>
+                <tr>
+                    <td>碳钢淬火并回火或</td>
+                    <td>0.25</td>
+                    <td>0.55</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                </tr>
+                <tr>
+                    <td>合金钢淬火并回火</td>
+                    <td>0.20</td>
+                    <td>0.55</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                </tr>
+                <tr>
+                    <th rowspan="3">10.9</th>
+                    <td>添加元素的碳钢（如硼或锰或铬）淬火并回火或</td>
+                    <td>0.20</td>
+                    <td>0.55</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                    <td rowspan="3">0.003</td>
+                    <td rowspan="3">425</td>
+                </tr>
+                <tr>
+                    <td>碳钢淬火并回火或</td>
+                    <td>0.25</td>
+                    <td>0.55</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                </tr>
+                <tr>
+                    <td>合金钢淬火并回火</td>
+                    <td>0.20</td>
+                    <td>0.55</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                </tr>
+                <tr>
+                    <th>12.9</th>
+                    <td>合金钢淬火并回火</td>
+                    <td>0.30</td>
+                    <td>0.50</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                    <td>0.003</td>
+                    <td>425</td>
+                </tr>
+                <tr>
+                    <th>12.9*</th>
+                    <td>添加元素的碳钢（如硼或锰或铬或钼）淬火并回火</td>
+                    <td>0.28</td>
+                    <td>0.50</td>
+                    <td>0.025</td>
+                    <td>0.025</td>
+                    <td>0.003</td>
+                    <td>380</td>
+                </tr>
+                <tr>
+                    <td colspan="8"> 1. 有争议时，实施成品分析
+                        <br>2. 硼的含量可达0.005%，非有效硼由添加钛和／或铝控制
+                        <br>3. 对4.6和5.6级冷镦紧固件，为保证达到要求的塑性和韧性，可能需要对其冷镦用线材或冷镦紧固件产品进行热处理
+                        <br>4. 这些性能等级允许采用易切钢制造，其硫、磷和铅的最大含量为：硫0.34%磷0.11%铅0.35%
+                        <br>5. 对含碳量低于0.25%的添加硼的碳钢，其锰的最低含量分别为：8.8级为0.6%，9.8级和10.9级为0.7%
+                        <br>6. 对这些性能等级用的材料，应有足够的淬透性，以确保紧固件螺纹截面的芯部在“淬硬”状态、回火前获得约９０％的马氏体组织
+                        <br>7. 这些合金钢至少应含有下列的一种元素，其最小含量分别为：铬0.30%;镍0.30%;钼0.20%;钒0.10%。当含有二、三或四种复合的合金成分时，合金元素的含量不能少于单个合金元素含量总和的70%
+                        <br>8. 对12.9/12.9*级表面不允许有金相能测出的白色磷化物聚集层。去除磷化物聚集层应在热处理前进行
+                        <br>9. 当考虑使用12.9/12.9*级，应谨慎从事。紧固件制造者的能力、服役条件和扳拧方法都应仔细考虑。除表面处理外，使用环境也可能造成紧固件的应力腐蚀开裂
+                    </td> 
+            </thead>        
+        </table>
+    </section>
+
+    <section id="session11">
+        <h2>螺栓，螺钉和螺柱的材料和力学物理性能2 (GB/T 3098.1-2010)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="3">序号</th>
+                    <th colspan="2" rowspan="3">力学或物理性能</th>
+                    <th colspan="10">性能等级</th>
+                </tr>
+                <tr>
+                    <th rowspan="2">4.6</th>
+                    <th rowspan="2">4.8</th>
+                    <th rowspan="2">5.6</th>
+                    <th rowspan="2">5.8</th>
+                    <th rowspan="2">6.8</th>
+                    <th colspan="2">8.8</th>
+                    <th rowspan="2">9.8</th>
+                    <th rowspan="2">10.9</th>
+                    <th rowspan="2">12.9/<br>12.9*</th>
+                </tr>
+                <tr>
+                    <th>d≤<br>16mm</th>
+                    <th>d＞<br>16mm</th>
+                </tr>
+                <tr>
+                    <th rowspan="2">1</th>
+                    <th rowspan="2">抗拉强度R<sub>m</sub>/MPa</th>
+                    <th>公称</th>
+                    <td colspan="2">400</td>
+                    <td colspan="2">500</td>
+                    <td>600</td>
+                    <td colspan="2">800</td>
+                    <td>900</td>
+                    <td>1000</td>
+                    <td>1200</td>
+                </tr>
+                <tr>
+                    <th>min</th>
+                    <td>400</td>
+                    <td>420</td>
+                    <td>500</td>
+                    <td>520</td>
+                    <td>600</td>
+                    <td>800</td>
+                    <td>830</td>
+                    <td>900</td>
+                    <td>1040</td>
+                    <td>1220</td>
+                </tr>
+                <tr>
+                    <th rowspan="2">2</th>
+                    <th rowspan="2">下屈服强度R<sub>eL</sub>/MPa</th>
+                    <th>公称</th>
+                    <td>240</td>
+                    <td>——</td>
+                    <td>300</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <th>min</th>
+                    <td>240</td>
+                    <td>——</td>
+                    <td>300</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <th rowspan="2">3</th>
+                    <th rowspan="2">规定非比列延伸0.2%的应力R<sub>P0.2</sub>/MPa</th>
+                    <th>公称</th>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>640</td>
+                    <td>640</td>
+                    <td>720</td>
+                    <td>900</td>
+                    <td>1080</td>
+                </tr>
+                <tr>
+                    <th>min</th>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>640</td>
+                    <td>660</td>
+                    <td>720</td>
+                    <td>940</td>
+                    <td>1100</td>
+                </tr>
+                <tr>
+                    <th rowspan="2">4</th>
+                    <th rowspan="2">紧固件实物的规定非比例延伸<br>0.004 8d的应力R<sub>Pf</sub>/MPa</th>
+                    <th>公称</th>
+                    <td>——</td>
+                    <td>320</td>
+                    <td>——</td>
+                    <td>400</td>
+                    <td>480</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <th>min</th>
+                    <td>——</td>
+                    <td>340</td>
+                    <td>——</td>
+                    <td>420</td>
+                    <td>480</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <th rowspan="2">5</th>
+                    <th>保证应力S<sub>P</sub>/MPa</th>
+                    <th>公称</th>
+                    <td>225</td>
+                    <td>310</td>
+                    <td>280</td>
+                    <td>380</td>
+                    <td>440</td>
+                    <td>580</td>
+                    <td>600</td>
+                    <td>650</td>
+                    <td>830</td>
+                    <td>970</td>
+                </tr>
+                <tr>
+                    <th>保证应力比</th>
+                    <th>S<sub>P，公称</sub>/R<sub>eL,min</sub>或<br>S<sub>P，公称</sub>/R<sub>P0.2,min</sub>或<br>S<sub>P，公称</sub>/R<sub>Pf,min</sub></th>
+                    <td>0.94</td>
+                    <td>0.91</td>
+                    <td>0.93</td>
+                    <td>0.90</td>
+                    <td>0.92</td>
+                    <td>0.91</td>
+                    <td>0.91</td>
+                    <td>0.90</td>
+                    <td>0.88</td>
+                    <td>0.88</td>
+                </tr>
+                <tr>
+                    <th>6</th>
+                    <th>机械加工试件的断后伸长率A/%</th>
+                    <th>min</th>
+                    <td>22</td>
+                    <td>——</td>
+                    <td>20</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>12</td>
+                    <td>12</td>
+                    <td>10</td>
+                    <td>9</td>
+                    <td>8</td>
+                </tr>
+                <tr>
+                    <th>7</th>
+                    <th>机械加工试件的断面收缩率Z/%</th>
+                    <th>min</th>
+                    <td colspan="5">——</td>
+                    <td colspan="2">52</td>
+                    <td>48</td>
+                    <td>48</td>
+                    <td>44</td>
+                </tr>
+                <tr>
+                    <th>8</th>
+                    <th>紧固件实物的断后伸长率A<sub>f</sub></th>
+                    <th>min</th>
+                    <td>——</td>
+                    <td>0.24</td>
+                    <td>——</td>
+                    <td>0.22</td>
+                    <td>0.20</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <th>9</th>
+                    <th colspan="2">头部坚固性</th>
+                    <td colspan="10">不得断裂或出现裂缝</td>
+                </tr>
+                <tr>
+                    <th rowspan="2">10</th>
+                    <th rowspan="2">维氏硬度/HV, F≥98N</th>
+                    <th>min</th>
+                    <td>120</td>
+                    <td>130</td>
+                    <td>155</td>
+                    <td>160</td>
+                    <td>190</td>
+                    <td>250</td>
+                    <td>255</td>
+                    <td>290</td>
+                    <td>320</td>
+                    <td>385</td>
+                </tr>
+                <tr>
+                    <th>max</th>
+                    <td colspan="4">220</td>
+                    <td>250</td>
+                    <td>320</td>
+                    <td>335</td>
+                    <td>360</td>
+                    <td>380</td>
+                    <td>435</td>
+                </tr>
+                <tr>
+                    <th rowspan="2">11</th>
+                    <th rowspan="2">布氏硬度/HBW, F=30D<sup>2</sup></th>
+                    <th>min</th>
+                    <td>114</td>
+                    <td>124</td>
+                    <td>147</td>
+                    <td>152</td>
+                    <td>181</td>
+                    <td>245</td>
+                    <td>250</td>
+                    <td>286</td>
+                    <td>316</td>
+                    <td>380</td>
+                </tr>
+                <tr>
+                    <th>max</th>
+                    <td colspan="4">209</td>
+                    <td>238</td>
+                    <td>316</td>
+                    <td>331</td>
+                    <td>355</td>
+                    <td>375</td>
+                    <td>429</td>
+                </tr>
+                <tr>
+                    <th rowspan="4">12</th>
+                    <th rowspan="2">洛氏硬度/HRB</th>
+                    <th>min</th>
+                    <td>67</td>
+                    <td>71</td>
+                    <td>79</td>
+                    <td>82</td>
+                    <td>89</td>
+                    <td colspan="5">——</td>
+                </tr>
+                <tr>
+                    <th>max</th>
+                    <td colspan="4">95.0</td>
+                    <td>99.5</td>
+                    <td colspan="5">——</td>
+                </tr>
+                <tr>
+                    <th rowspan="2">洛氏硬度/HRC</th>
+                    <th>min</th>
+                    <td colspan="5">——</td>
+                    <td>22</td>
+                    <td>23</td>
+                    <td>28</td>
+                    <td>32</td>
+                    <td>39</td>
+                </tr>
+                <tr>
+                    <th>max</th>
+                    <td colspan="5">——</td>
+                    <td>32</td>
+                    <td>34</td>
+                    <td>37</td>
+                    <td>39</td>
+                    <td>44</td>
+                </tr>
+                <tr>
+                    <th>13</th>
+                    <th>表面硬度/HV0.3</th>
+                    <th>max</th>
+                    <td colspan="5">——</td>
+                    <td colspan="3">≤30HV</td>
+                    <td>≤390HV</td>
+                    <td>≤435HV</td>
+                </tr>
+                <tr>
+                    <th rowspan="2">14</th>
+                    <th>螺纹未脱碳层的高度 E/mm</th>
+                    <th>min</th>
+                    <td colspan="5">——</td>
+                    <td colspan="3">1/2H<sub>1</sub></td>
+                    <td>2/3H<sub>1</sub></td>
+                    <td>3/4H<sub>1</sub></td>
+                </tr>
+                <tr>
+                    <th>螺纹全脱碳层的深度 G/mm</th>
+                    <th>max</th>
+                    <td colspan="5">——</td>
+                    <td colspan="5">0.015</td>
+                </tr>
+                <tr>
+                    <th>15</th>
+                    <th>再回火后硬度的降低值/HV</th>
+                    <th>max</th>
+                    <td colspan="5">——</td>
+                    <td colspan="5">20</td>
+                </tr>
+                <tr>
+                    <th>16</th>
+                    <th>破坏扭矩 M<sub>B</sub>N·m</th>
+                    <th>min</th>
+                    <td colspan="5">——</td>
+                    <td colspan="5">按GB/T 3098.13的规定</td>
+                </tr>
+                <tr>
+                    <th>17</th>
+                    <th>吸收能量 K<sub>V</sub>/J</th>
+                    <th>min</th>
+                    <td colspan="2">——</td>
+                    <td>27</td>
+                    <td colspan="2">——</td>
+                    <td>27</td>
+                    <td>27</td>
+                    <td>27</td>
+                    <td>27</td>
+                    <td>?</td>
+                </tr>
+                <tr>
+                    <th>18</th>
+                    <th colspan="2">表面缺陷</th>
+                    <td colspan="9">GB/T 5779.1</td>
+                    <td>GB/T 5779.3</td>
+                </tr>
+            </thead>
+        </table>
+    </section>
+
+    <section id="session12">
+        <h2>常用材料弹性模量，切变模量，泊松比表</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>材料名称</th>
+                    <th>弹性模量<br>\E\GPa</th>
+                    <th>切变模量<br>\G\GPa</th>
+                    <th>泊松比</th>
+                </tr>
+                <tr>
+                    <td>1</td>
+                    <td>镍铬钢，合金钢</td>
+                    <td>206</td>
+                    <td>79.38</td>
+                    <td>0.25 ~ 3</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>碳钢</td>
+                    <td>196~206</td>
+                    <td>79</td>
+                    <td>0.24</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>铸钢</td>
+                    <td>172~2102</td>
+                    <td>——</td>
+                    <td>0.3</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>球墨铸铁</td>
+                    <td>140~154</td>
+                    <td>73~76</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>灰铸铁，白口铸铁</td>
+                    <td>113~157</td>
+                    <td>44</td>
+                    <td>0.23~</td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>冷拔纯铜</td>
+                    <td>127</td>
+                    <td>48</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>轧制磷青铜</td>
+                    <td>113</td>
+                    <td>41</td>
+                    <td>0.32~</td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>轧制纯铜</td>
+                    <td>108</td>
+                    <td>39</td>
+                    <td>0.31~</td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td>轧制锰青铜</td>
+                    <td>108</td>
+                    <td>39</td>
+                    <td>0.35</td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td>铸铝青铜</td>
+                    <td>103</td>
+                    <td>41</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>11</td>
+                    <td>冷拔黄铜</td>
+                    <td>89~97</td>
+                    <td>34~36</td>
+                    <td>0.32~</td>
+                </tr>
+                <tr>
+                    <td>12</td>
+                    <td>轧制锌</td>
+                    <td>82</td>
+                    <td>31</td>
+                    <td>0.27</td>
+                </tr>
+                <tr>
+                    <td>13</td>
+                    <td>硬铝合金</td>
+                    <td>70</td>
+                    <td>26</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>14</td>
+                    <td>轧制铝</td>
+                    <td>68</td>
+                    <td>25~26</td>
+                    <td>0.32~</td>
+                </tr>
+                <tr>
+                    <td>14</td>
+                    <td>轧制铝</td>
+                    <td>68</td>
+                    <td>25~26</td>
+                    <td>0.32~</td>
+                </tr>
+                <tr>
+                    <td>15</td>
+                    <td>铅</td>
+                    <td>17</td>
+                    <td>7</td>
+                    <td>0.42</td>
+                </tr>
+                <tr>
+                    <td>16</td>
+                    <td>玻璃</td>
+                    <td>55</td>
+                    <td>22</td>
+                    <td>0.25</td>
+                </tr>
+                <tr>
+                    <td>17</td>
+                    <td>混凝土</td>
+                    <td>14~23</td>
+                    <td>4.9~15.7</td>
+                    <td>0.1~0.18</td>
+                </tr>
+                <tr>
+                    <td>18</td>
+                    <td>纵纹木材</td>
+                    <td>9.8~12</td>
+                    <td>0.5</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>19</td>
+                    <td>横纹木材</td>
+                    <td>0.5~0.98</td>
+                    <td>0.44~</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>20</td>
+                    <td>橡胶</td>
+                    <td>0.00784</td>
+                    <td>——</td>
+                    <td>0.47</td>
+                </tr>
+                <tr>
+                    <td>21</td>
+                    <td>电木</td>
+                    <td>1.96~2.94</td>
+                    <td>0.69~</td>
+                    <td>0.35~</td>
+                </tr>
+                <tr>
+                    <td>22</td>
+                    <td>尼龙</td>
+                    <td>28.3</td>
+                    <td>10.1</td>
+                    <td>0.4</td>
+                </tr>
+                <tr>
+                    <td>23</td>
+                    <td>可锻铸铁</td>
+                    <td>152</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>24</td>
+                    <td>拔制铝线</td>
+                    <td>69</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>25</td>
+                    <td>大理石</td>
+                    <td>55</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>26</td>
+                    <td>花岗石</td>
+                    <td>48</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>27</td>
+                    <td>石灰石</td>
+                    <td>41</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>28</td>
+                    <td>尼龙1010</td>
+                    <td>1.07</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>29</td>
+                    <td>夹布酚醛塑料</td>
+                    <td>4~8.8</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>30</td>
+                    <td>石棉酚醛塑料</td>
+                    <td>1.3</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>31</td>
+                    <td>高压聚乙烯</td>
+                    <td>0.15~0.25</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>32</td>
+                    <td>低压聚乙烯</td>
+                    <td>0.49~0.78</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+                <tr>
+                    <td>33</td>
+                    <td>聚丙烯</td>
+                    <td>1.32~1.42</td>
+                    <td>——</td>
+                    <td>——</td>
+                </tr>
+            </thead>        
+        </table>
+    </section>
+
+    <section id="session13">
+        <h2>六角头螺栓全螺纹C级（GB/T 5780-2000,GB/T 5781-2000）</h2>
+        <div class="image-container">
+            <img src="{% static 'calculator/session13-1.png' %}" alt="세션 13">
+            <img src="{% static 'calculator/session13.png' %}" alt="세션 13">
+        </div>  
+        （单位：mm）
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th colspan="2">螺纹规格d</th>
+                        <th>M5</th>
+                        <th>M6</th>
+                        <th>M8</th>
+                        <th>M10</th>
+                        <th>M12</th>
+                        <th>(M14)</th>
+                        <th>M16</th>
+                        <th>(M18)</th>
+                        <th>M20</th>
+                        <th>(M22)</th>
+                        <th>M24</th>
+                        <th>(M27)</th>
+                        <th>M30</th>
+                        <th>M36</th>
+                        <th>M42</th>
+                        <th>M48</th>
+                        <th>M56</th>
+                        <th>M64</th>
+                    </tr>
+                    <tr>
+                        <th colspan="2">s(公称)</th>
+                        <td>8</td>
+                        <td>10</td>
+                        <td>13</td>
+                        <td>16</td>
+                        <td>18</td>
+                        <td>21</td>
+                        <td>24</td>
+                        <td>27</td>
+                        <td>30</td>
+                        <td>34</td>
+                        <td>36</td>
+                        <td>41</td>
+                        <td>46</td>
+                        <td>55</td>
+                        <td>65</td>
+                        <td>75</td>
+                        <td>85</td>
+                        <td>95</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">k(公称)</th>
+                        <td>3.5</td>
+                        <td>4</td>
+                        <td>5.3</td>
+                        <td>6.4</td>
+                        <td>7.5</td>
+                        <td>8.8</td>
+                        <td>10</td>
+                        <td>11.5</td>
+                        <td>12.5</td>
+                        <td>14</td>
+                        <td>15</td>
+                        <td>17</td>
+                        <td>18.7</td>
+                        <td>22.5</td>
+                        <td>26</td>
+                        <td>30</td>
+                        <td>35</td>
+                        <td>40</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">r(最小)</th>
+                        <td>0.2</td>
+                        <td>0.25</td>
+                        <td>0.4</td>
+                        <td>0.4</td>
+                        <td>0.6</td>
+                        <td>0.6</td>
+                        <td>0.6</td>
+                        <td>0.6</td>
+                        <td>0.8</td>
+                        <td>0.8</td>
+                        <td>0.8</td>
+                        <td>1</td>
+                        <td>1</td>
+                        <td>1</td>
+                        <td>1.2</td>
+                        <td>1.6</td>
+                        <td>2</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">e(最小)</th>
+                        <td>8.6</td>
+                        <td>10.9</td>
+                        <td>14.2</td>
+                        <td>17.6</td>
+                        <td>19.9</td>
+                        <td>22.8</td>
+                        <td>26.2</td>
+                        <td>29.6</td>
+                        <td>33</td>
+                        <td>37.3</td>
+                        <td>39.6</td>
+                        <td>45.2</td>
+                        <td>50.9</td>
+                        <td>60.8</td>
+                        <td>71.3</td>
+                        <td>82.6</td>
+                        <td>93.6</td>
+                        <td>104.9</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">a(最大)</th>
+                        <td>2.4</td>
+                        <td>3</td>
+                        <td>4</td>
+                        <td>4.5</td>
+                        <td>5.3</td>
+                        <td>6</td>
+                        <td>6</td>
+                        <td>7.5</td>
+                        <td>7.5</td>
+                        <td>7.5</td>
+                        <td>7.5</td>
+                        <td>9</td>
+                        <td>10.5</td>
+                        <td>12</td>
+                        <td>13.5</td>
+                        <td>15</td>
+                        <td>16.5</td>
+                        <td>18</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">d<sub>w</sub>(最小)</th>
+                        <td>6.7</td>
+                        <td>8.7</td>
+                        <td>11.5</td>
+                        <td>14.5</td>
+                        <td>16.5</td>
+                        <td>19.2</td>
+                        <td>22</td>
+                        <td>24.9</td>
+                        <td>27.7</td>
+                        <td>31.4</td>
+                        <td>33.3</td>
+                        <td>38</td>
+                        <td>42.8</td>
+                        <td>51.1</td>
+                        <td>60</td>
+                        <td>69.5</td>
+                        <td>78.7</td>
+                        <td>88.2</td>
+                    </tr>
+                    <tr>
+                        <th rowspan="3">b(参考)</th>
+                        <th>l≤125</th>
+                        <td>16</td>
+                        <td>18</td>
+                        <td>22</td>
+                        <td>26</td>
+                        <td>30</td>
+                        <td>34</td>
+                        <td>38</td>
+                        <td>42</td>
+                        <td>46</td>
+                        <td>50</td>
+                        <td>54</td>
+                        <td>60</td>
+                        <td>66</td>
+                        <td>78</td>
+                        <td>——</td>
+                        <td>——</td>
+                        <td>——</td>
+                        <td>——</td>
+                    </tr>
+                    <tr>
+                        <th>125＜l≤200</th>
+                        <td>——</td>
+                        <td>——</td>
+                        <td>28</td>
+                        <td>32</td>
+                        <td>36</td>
+                        <td>40</td>
+                        <td>44</td>
+                        <td>48</td>
+                        <td>52</td>
+                        <td>56</td>
+                        <td>60</td>
+                        <td>66</td>
+                        <td>72</td>
+                        <td>84</td>
+                        <td>96</td>
+                        <td>108</td>
+                        <td>124</td>
+                        <td>140</td>
+                    </tr>
+                    <tr>
+                        <th>200＜l</th>
+                        <td>——</td>
+                        <td>——</td>
+                        <td>——</td>
+                        <td>——</td>
+                        <td>——</td>
+                        <td>53</td>
+                        <td>57</td>
+                        <td>61</td>
+                        <td>65</td>
+                        <td>69</td>
+                        <td>73</td>
+                        <td>79</td>
+                        <td>85</td>
+                        <td>97</td>
+                        <td>109</td>
+                        <td>121</td>
+                        <td>137</td>
+                        <td>153</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">l(公称)<br>GB/T 5780-2000</th>
+                        <td>25~50</td>
+                        <td>30~60</td>
+                        <td>40~80</td>
+                        <td>45~100</td>
+                        <td>55~120</td>
+                        <td>60~140</td>
+                        <td>65~160</td>
+                        <td>80~180</td>
+                        <td>80~200</td>
+                        <td>90~220</td>
+                        <td>100~240</td>
+                        <td>110~260</td>
+                        <td>120~300</td>
+                        <td>140~360</td>
+                        <td>180~420</td>
+                        <td>200~480</td>
+                        <td>240~500</td>
+                        <td>260~500</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">全螺纹长度l<br>GB/T 5781-2000</th>
+                        <td>10~50</td>
+                        <td>12~60</td>
+                        <td>16~80</td>
+                        <td>20~100</td>
+                        <td>25~120</td>
+                        <td>30~140</td>
+                        <td>35~160</td>
+                        <td>35~180</td>
+                        <td>40~200</td>
+                        <td>45~220</td>
+                        <td>50~240</td>
+                        <td>55~280</td>
+                        <td>60~300</td>
+                        <td>70~360</td>
+                        <td>80~420</td>
+                        <td>100~480</td>
+                        <td>110~500</td>
+                        <td>120~500</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">l系列（公称）</th>
+                        <td colspan="18">10, 12, 16, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 180, 200, 220, 240, 260, 280, <br>300, 320, 340, 360, 380, 400, 420, 440, 460, 480, 500</td>
+                    </tr>
+                    <tr>
+                        <th rowspan="2">技术条件</th>
+                        <th colspan="2">GB/T 5780<br>螺纹公差:8g</th>
+                        <td rowspan="2" colspan="2">材料：钢</td>
+                        <td rowspan="2" colspan="6">性能等级:d≤M39,3.6,4.6,4.8; M39＜d，按协议</td>
+                        <td rowspan="2" colspan="6">表面处理：不经处理，电镀，非电解锌粉覆盖</td>
+                        <td rowspan="2" colspan="3">产品等级:C</td>
+                    </tr>
+                    <tr>
+                        <th colspan="2">GB/T 5781<br>螺纹公差:8g</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </section>
+
+    参考：机械设计手册 第六版 成大先 主编
+    <div id="calculatorPopup" class="calculator-popup">
+        <div class="calculator-popup-header" id="dragHeader">
+            <span>计算机</span>
+            <button onclick="closeCalculator()">X</button>
+        </div>
+        <div class="calculator-body">
+            <input type="text" id="calcDisplay" disabled placeholder="0">
+            <div class="calculator-buttons">
+                <button onclick="clearDisplay()">AC</button>
+                <button onclick="clearLast('C')">C</button>
+                <button onclick="appendValue('/')">÷</button>
+                <button onclick="appendValue('*')">x</button>
+                <button onclick="appendValue('7')">7</button>
+                <button onclick="appendValue('8')">8</button>
+                <button onclick="appendValue('9')">9</button>
+                <button onclick="appendValue('-')">-</button>
+                <button onclick="appendValue('4')">4</button>
+                <button onclick="appendValue('5')">5</button>
+                <button onclick="appendValue('6')">6</button>
+                <button onclick="appendValue('+')">+</button>
+                <button onclick="appendValue('1')">1</button>
+                <button onclick="appendValue('2')">2</button>
+                <button onclick="appendValue('3')">3</button>
+                <button onclick="calculateResult()">=</button>
+                <button onclick="appendValue('0')">0</button>
+                <button onclick="appendValue('.')">.</button>
+                <button onclick="appendValue('(')">(</button>
+                <button onclick="appendValue(')')">)</button>
+            </div>
+        </div>
+        <script src="script.js"></script>
+    </div>
+
+    <button id="openCalculatorBtn" class="open-calculator-btn" onclick="openCalculator()">打开计算机</button>
+    
+    <script>
+        // 공식에 따라 값을 계산하고 결과를 테이블에 표시하는 함수
+        function calculateValues(D, P, rowNumber) {
+            const H = (Math.sqrt(3) / 2) * P;  // H 계산
+            const D2 = D - (3 / 4) * H; // D2 계산
+            const D1 = D - (5 / 4) * H; // D1 계산
+
+            // 소숫점 3자리까지 반올림하여 결과 표시
+            document.getElementById('D2_' + rowNumber).innerText = D2.toFixed(3);
+            document.getElementById('D1_' + rowNumber).innerText = D1.toFixed(3);
+            document.getElementById('H_' + rowNumber).innerText = H.toFixed(3);
+        } 
+
+        // 페이지 로드 시 자동으로 계산된 값을 표시
+        window.onload = function() {
+                        if (window.location.hash) {
+                const sessionId = window.location.hash.substring(1);  // #을 제거한 해시값
+                const session = document.getElementById(sessionId);
+
+                if (session) {
+                    session.scrollIntoView({ behavior: 'smooth' });
+
+                    // 하이라이트 추가
+                    session.classList.add('highlight');
+
+                    // 하이라이트를 일정 시간 후 자동으로 제거
+                    setTimeout(() => {
+                        session.classList.remove('highlight');
+                    }, 600);  // 3초 후에 하이라이트 제거
+                }
+            }
+            calculateValues(1.0, 0.20, 1);  
+            calculateValues(1.0, 0.25, 2);  
+            calculateValues(1.1, 0.20, 3);  
+            calculateValues(1.1, 0.25, 4);  
+            calculateValues(1.2, 0.20, 5);  
+            calculateValues(1.2, 0.25, 6);  
+            calculateValues(1.4, 0.20, 7);  
+            calculateValues(1.4, 0.30, 8);  
+            calculateValues(1.6, 0.20, 9);  
+            calculateValues(1.6, 0.35, 10);  
+            calculateValues(1.8, 0.20, 11);  
+            calculateValues(1.8, 0.35, 12);  
+            calculateValues(2.0, 0.25, 13);  
+            calculateValues(2.0, 0.40, 14);  
+            calculateValues(2.2, 0.25, 15);  
+            calculateValues(2.2, 0.45, 16);  
+            calculateValues(2.5, 0.35, 17);  
+            calculateValues(2.5, 0.45, 18);  
+            calculateValues(3.0, 0.35, 19);  
+            calculateValues(3.0, 0.5, 20);  
+            calculateValues(3.5, 0.35, 21);  
+            calculateValues(3.5, 0.6, 22);  
+            calculateValues(4.0, 0.5, 23);  
+            calculateValues(4.0, 0.7, 24);  
+            calculateValues(4.5, 0.5, 25);  
+            calculateValues(4.5, 0.75, 26);  
+            calculateValues(5.0, 0.5, 27);  
+            calculateValues(5.0, 0.80, 28);  
+            calculateValues(5.5, 0.5, 29);  
+            calculateValues(6.0, 0.75, 30);  
+            calculateValues(6.0, 1, 31);  
+            calculateValues(7, 0.75, 32);  
+            calculateValues(7, 1, 33);  
+            calculateValues(8, 0.75, 34);  
+            calculateValues(8, 1, 35);  
+            calculateValues(8, 1.25, 36);  
+            calculateValues(9, 0.75, 37);  
+            calculateValues(9, 1, 38);  
+            calculateValues(9, 1.25, 39);  
+            calculateValues(10, 0.75, 40);  
+            calculateValues(10, 1, 41);  
+            calculateValues(10, 1.25, 42);  
+            calculateValues(10, 1.5, 43); 
+            calculateValues(11, 0.75, 44);  
+            calculateValues(11, 1, 45);  
+            calculateValues(11, 1.5, 46);   
+            calculateValues(12, 1, 47);
+            calculateValues(12, 1.25, 48);
+            calculateValues(12, 1.5, 49);
+            calculateValues(12, 1.75, 50);
+            calculateValues(14, 1, 51);
+            calculateValues(14, 1.25, 52);
+            calculateValues(14, 1.5, 53);
+            calculateValues(14, 2, 54);
+            calculateValues(15, 1, 55);
+            calculateValues(15, 1.5, 56);
+            calculateValues(16, 1, 57);
+            calculateValues(16, 1.5, 58);
+            calculateValues(16, 2, 59);
+            calculateValues(17, 1, 60);
+            calculateValues(17, 1.5, 61);
+            calculateValues(18, 1, 62);
+            calculateValues(18, 1.5, 63);
+            calculateValues(18, 2, 64);
+            calculateValues(18, 2.5, 65);
+            calculateValues(20, 1, 66);
+            calculateValues(20, 1.5, 67);
+            calculateValues(20, 2, 68);
+            calculateValues(20, 2.5, 69);
+            calculateValues(22, 1, 70);
+            calculateValues(22, 1.5, 71);
+            calculateValues(22, 2, 72);
+            calculateValues(22, 2.5, 73);
+            calculateValues(24, 1, 74);
+            calculateValues(24, 1.5, 75);
+            calculateValues(24, 2, 76);
+            calculateValues(24, 3, 77);
+            calculateValues(25, 1, 78);
+            calculateValues(25, 1.5, 79);
+            calculateValues(25, 2, 80);
+            calculateValues(26, 1.5, 81);
+            calculateValues(27, 1, 82);
+            calculateValues(27, 1.5, 83);
+            calculateValues(27, 2, 84);
+            calculateValues(27, 3, 85);
+            calculateValues(28, 1, 86);
+            calculateValues(28, 1.5, 87);
+            calculateValues(28, 2, 88);
+            calculateValues(30, 1, 89);
+            calculateValues(30, 1.5, 90);
+            calculateValues(30, 2, 91);
+            calculateValues(30, 3, 92);
+            calculateValues(30, 3.5, 93);
+            calculateValues(32, 1.5, 94);
+            calculateValues(32, 2, 95);
+            calculateValues(33, 1.5, 96);
+            calculateValues(33, 2, 97);
+            calculateValues(33, 3, 98);
+            calculateValues(33, 3.5, 99);
+            calculateValues(35, 1.5, 100);
+            calculateValues(36, 1.5, 101);
+            calculateValues(36, 2, 102);
+            calculateValues(36, 3, 103);
+            calculateValues(36, 4, 104);
+            calculateValues(38, 1.5, 105);
+            calculateValues(39, 1.5, 106);
+            calculateValues(39, 2, 107);
+            calculateValues(39, 3, 108);
+            calculateValues(39, 4, 109);
+            calculateValues(40, 1.5, 110);
+            calculateValues(40, 2, 111);
+            calculateValues(40, 3, 112);
+            calculateValues(42, 1.5, 113);
+            calculateValues(42, 2, 114);
+            calculateValues(42, 3, 115);
+            calculateValues(42, 4, 116);
+            calculateValues(42, 4.5, 117);
+            calculateValues(45, 1.5, 118);
+            calculateValues(45, 2, 119);
+            calculateValues(45, 3, 120);
+            calculateValues(45, 4, 121);
+            calculateValues(45, 4.5, 122);
+            calculateValues(48, 1.5, 123);
+            calculateValues(48, 2, 124);
+            calculateValues(48, 3, 125);
+            calculateValues(48, 4, 126);
+            calculateValues(48, 5, 127);
+            calculateValues(50, 1.5, 128);
+            calculateValues(50, 2, 129);
+            calculateValues(50, 3, 130);
+            calculateValues(52, 1.5, 131);
+            calculateValues(52, 2, 132);
+            calculateValues(52, 3, 133);
+            calculateValues(52, 4, 134);
+            calculateValues(52, 5, 135);
+            calculateValues(55, 1.5, 136);
+            calculateValues(55, 2, 137);
+            calculateValues(55, 3, 138);
+            calculateValues(55, 4, 139);
+            calculateValues(56, 1.5, 140);
+            calculateValues(56, 2, 141);
+            calculateValues(56, 3, 142);
+            calculateValues(56, 4, 143);
+            calculateValues(56, 5.5, 144);
+            calculateValues(58, 1.5, 145);
+            calculateValues(58, 2, 146);
+            calculateValues(58, 3, 147);
+            calculateValues(58, 4, 148);
+            calculateValues(60, 1.5, 149);
+            calculateValues(60, 2, 150);
+            calculateValues(60, 3, 151);
+            calculateValues(60, 4, 152);
+            calculateValues(60, 5.5, 153);
+            calculateValues(62, 1.5, 154);
+            calculateValues(62, 2, 155);
+            calculateValues(62, 3, 156);
+            calculateValues(62, 4, 157);
+            calculateValues(64, 1.5, 158);
+            calculateValues(64, 2, 159);
+            calculateValues(64, 3, 160);
+            calculateValues(64, 4, 161);
+            calculateValues(64, 6, 162);
+            calculateValues(65, 1.5, 163);
+            calculateValues(65, 2, 164);
+            calculateValues(65, 3, 165);
+            calculateValues(65, 4, 166);
+            calculateValues(68, 1.5, 167);
+            calculateValues(68, 2, 168);
+            calculateValues(68, 3, 169);
+            calculateValues(68, 4, 170);
+            calculateValues(68, 6, 171);
+            calculateValues(70, 1.5, 172);
+            calculateValues(70, 2, 173);
+            calculateValues(70, 3, 174);
+            calculateValues(70, 4, 175);
+            calculateValues(70, 6, 176);
+            calculateValues(72, 1.5, 177);
+            calculateValues(72, 2, 178);
+            calculateValues(72, 3, 179);
+            calculateValues(72, 4, 180);
+            calculateValues(72, 6, 181);
+            calculateValues(75, 1.5, 182);
+            calculateValues(75, 2, 183);
+            calculateValues(75, 3, 184);
+            calculateValues(75, 4, 185);
+            calculateValues(76, 1.5, 186);
+            calculateValues(76, 2, 187);
+            calculateValues(76, 3, 188);
+            calculateValues(76, 4, 189);
+            calculateValues(76, 6, 190);
+            calculateValues(78, 2, 191);
+            calculateValues(80, 1.5, 192);
+            calculateValues(80, 2, 193);
+            calculateValues(80, 3, 194);
+            calculateValues(80, 4, 195);
+            calculateValues(80, 6, 196);
+            calculateValues(82, 2, 197);
+            calculateValues(85, 2, 198);
+            calculateValues(85, 3, 199);
+            calculateValues(85, 4, 200);
+            calculateValues(85, 6, 201);
+            calculateValues(90, 2, 202);
+            calculateValues(90, 3, 203);
+            calculateValues(90, 4, 204);
+            calculateValues(90, 6, 205);
+            calculateValues(95, 2, 206);
+            calculateValues(95, 3, 207);
+            calculateValues(95, 4, 208);
+            calculateValues(95, 6, 209);
+            calculateValues(100, 2, 210);
+            calculateValues(100, 3, 211);
+            calculateValues(100, 4, 212);
+            calculateValues(100, 6, 213);
+            calculateValues(105, 2, 214);
+            calculateValues(105, 3, 215);
+            calculateValues(105, 4, 216);
+            calculateValues(105, 6, 217);
+            calculateValues(110, 2, 218);
+            calculateValues(110, 3, 219);
+            calculateValues(110, 4, 220);
+            calculateValues(110, 6, 221);
+            calculateValues(115, 2, 222);
+            calculateValues(115, 3, 223);
+            calculateValues(115, 4, 224);
+            calculateValues(115, 6, 225);
+            calculateValues(120, 2, 226);
+            calculateValues(120, 3, 227);
+            calculateValues(120, 4, 228);
+            calculateValues(120, 6, 229);
+            calculateValues(125, 2, 230);
+            calculateValues(125, 3, 231);
+            calculateValues(125, 4, 232);
+            calculateValues(125, 6, 233);
+            calculateValues(130, 2, 234);
+            calculateValues(130, 3, 235);
+            calculateValues(130, 4, 236);
+            calculateValues(130, 6, 237);
+            calculateValues(135, 2, 238);
+            calculateValues(135, 3, 239);
+            calculateValues(135, 4, 240);
+            calculateValues(135, 6, 241);
+            calculateValues(140, 2, 242);
+            calculateValues(140, 3, 243);
+            calculateValues(140, 4, 244);
+            calculateValues(140, 6, 245);
+            calculateValues(145, 2, 246);
+            calculateValues(145, 3, 247);
+            calculateValues(145, 4, 248);
+            calculateValues(145, 6, 249);
+            calculateValues(150, 2, 250);
+            calculateValues(150, 3, 251);
+            calculateValues(150, 4, 252);
+            calculateValues(150, 6, 253);
+            calculateValues(150, 8, 254);
+            calculateValues(155, 3, 255);
+            calculateValues(155, 4, 256);
+            calculateValues(155, 6, 257);
+            calculateValues(160, 3, 258);
+            calculateValues(160, 4, 259);
+            calculateValues(160, 6, 260);
+            calculateValues(160, 8, 261);
+            calculateValues(165, 3, 262);
+            calculateValues(165, 4, 263);
+            calculateValues(165, 6, 264);
+            calculateValues(170, 3, 265);
+            calculateValues(170, 4, 266);
+            calculateValues(170, 6, 267);
+            calculateValues(170, 8, 268);
+            calculateValues(175, 3, 269);
+            calculateValues(175, 4, 270);
+            calculateValues(175, 6, 271);
+            calculateValues(180, 3, 272);
+            calculateValues(180, 4, 273);
+            calculateValues(180, 6, 274);
+            calculateValues(180, 8, 275);
+            calculateValues(185, 3, 276);
+            calculateValues(185, 4, 277);
+            calculateValues(185, 6, 278);
+            calculateValues(190, 3, 279);
+            calculateValues(190, 4, 280);
+            calculateValues(190, 6, 281);
+            calculateValues(190, 8, 282);
+            calculateValues(195, 3, 283);
+            calculateValues(195, 4, 284);
+            calculateValues(195, 6, 285);
+            calculateValues(200, 3, 286);
+            calculateValues(200, 4, 287);
+            calculateValues(200, 6, 288);
+            calculateValues(200, 8, 289);
+            calculateValues(205, 3, 290);
+            calculateValues(205, 4, 291);
+            calculateValues(205, 6, 292);
+            calculateValues(210, 3, 293);
+            calculateValues(210, 4, 294);
+            calculateValues(210, 6, 295);
+            calculateValues(210, 8, 296);
+            calculateValues(215, 3, 297);
+            calculateValues(215, 4, 298);
+            calculateValues(215, 6, 299);
+            calculateValues(220, 3, 300);
+            calculateValues(220, 4, 301);
+            calculateValues(220, 6, 302);
+            calculateValues(220, 8, 303);
+            calculateValues(225, 3, 304);
+            calculateValues(225, 4, 305);
+            calculateValues(225, 6, 306);
+            calculateValues(230, 3, 307);
+            calculateValues(230, 4, 308);
+            calculateValues(230, 6, 309);
+            calculateValues(230, 8, 310);
+            calculateValues(235, 3, 311);
+            calculateValues(235, 4, 312);
+            calculateValues(235, 6, 313);
+            calculateValues(240, 3, 314);
+            calculateValues(240, 4, 315);
+            calculateValues(240, 6, 316);
+            calculateValues(240, 8, 317);
+            calculateValues(245, 3, 318);
+            calculateValues(245, 4, 319);
+            calculateValues(245, 6, 320);
+            calculateValues(250, 3, 321);
+            calculateValues(250, 4, 322);
+            calculateValues(250, 6, 323);
+            calculateValues(250, 8, 324);
+            calculateValues(255, 4, 325);
+            calculateValues(255, 6, 326);
+            calculateValues(260, 4, 327);
+            calculateValues(260, 6, 328);
+            calculateValues(260, 8, 329);
+            calculateValues(265, 4, 330);
+            calculateValues(265, 6, 331);
+            calculateValues(270, 4, 332);
+            calculateValues(270, 6, 333);
+            calculateValues(270, 8, 334);
+            calculateValues(275, 4, 335);
+            calculateValues(275, 6, 336);
+            calculateValues(280, 4, 337);
+            calculateValues(280, 6, 338);
+            calculateValues(280, 8, 339);
+            calculateValues(285, 4, 340);
+            calculateValues(285, 6, 341);
+            calculateValues(290, 4, 342);
+            calculateValues(290, 6, 343);
+            calculateValues(290, 8, 344);
+            calculateValues(295, 4, 345);
+            calculateValues(295, 6, 346);
+            calculateValues(300, 4, 347);
+            calculateValues(300, 6, 348);
+            calculateValues(300, 8, 349);
+            calculateValues(310, 4, 350);
+            calculateValues(310, 6, 351);
+            calculateValues(320, 4, 352);
+            calculateValues(320, 6, 353);
+            calculateValues(330, 4, 354);
+            calculateValues(330, 6, 355);
+            calculateValues(340, 4, 356);
+            calculateValues(340, 6, 357);
+            calculateValues(350, 4, 358);
+            calculateValues(350, 6, 359);
+            calculateValues(360, 4, 360);
+            calculateValues(360, 6, 361);
+            calculateValues(370, 4, 362);
+            calculateValues(370, 6, 363);
+            calculateValues(380, 4, 364);
+            calculateValues(380, 6, 365);
+            calculateValues(390, 4, 366);
+            calculateValues(390, 6, 367);
+            calculateValues(400, 4, 368);
+            calculateValues(400, 6, 369);
+            calculateValues(410, 6, 370);
+            calculateValues(420, 6, 371);
+            calculateValues(430, 6, 372);
+            calculateValues(440, 6, 373);
+            calculateValues(450, 6, 374);
+            calculateValues(460, 6, 375);
+            calculateValues(470, 6, 376);
+            calculateValues(480, 6, 377);
+            calculateValues(490, 6, 378);
+            calculateValues(500, 6, 379);
+            calculateValues(510, 6, 380);
+            calculateValues(520, 6, 381);
+            calculateValues(530, 6, 382);
+            calculateValues(540, 6, 383);
+            calculateValues(550, 6, 384);
+            calculateValues(560, 6, 385);
+            calculateValues(570, 6, 386);
+            calculateValues(580, 6, 387);
+            calculateValues(590, 6, 388);
+            calculateValues(600, 6, 389);
+        }
+    </script>
+    <script>
+        window.onscroll = function() {
+            const button = document.getElementById("scrollToTopBtn");
+            if (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200) {
+                button.style.display = "block"; // 버튼 보이기
+            } else {
+                button.style.display = "none"; // 버튼 숨기기
+            }
+        };
+
+        // 맨 위로 부드럽게 스크롤하는 함수
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth" // 부드럽게 스크롤
+            });
+        const allSessions = document.querySelectorAll('section');
+        allSessions.forEach((session) => {
+            session.classList.remove('highlight');
+        });
+
+        // 해당 세션에 하이라이트 추가
+        session.classList.add('highlight');
+
+        // 하이라이트를 일정 시간 후 자동으로 제거
+        setTimeout(() => {
+            session.classList.remove('highlight');
+        }, 600);  // 3초 후에 하이라이트 제거
+        }
+
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <script>
+        // 버튼 클릭 시 해당 세션으로 스크롤하는 함수
+        function scrollToSession(sessionNumber) {
+            const session = document.getElementById('session' + sessionNumber);
+
+            // 세션 위치로 부드럽게 스크롤
+            session.scrollIntoView({
+                behavior: 'smooth', // 부드럽게 스크롤
+                block: 'start'      // 세션의 상단에 맞춰서 이동
+            });
+            const allSessions = document.querySelectorAll('section');
+            allSessions.forEach((session) => {
+                session.classList.remove('highlight');
+            });
+
+            // 해당 세션에 하이라이트 추가
+            session.classList.add('highlight');
+
+            // 하이라이트를 일정 시간 후 자동으로 제거
+            setTimeout(() => {
+                session.classList.remove('highlight');
+            }, 1000);  // 3초 후에 하이라이트 제거
+        }
+    </script>
+    <script> /*메뉴*/
+        let sidear = document.getElementById('sidebar'); // 메뉴 바
+        let sidebarWrapper = document.querySelector('.sidebar-wrapper'); // 메뉴 바 외부 영역
+
+        // 메뉴 바 열기/닫기
+        function toggleSidebar() {
+            if (sidebar.style.left === '0px') {
+                sidebar.style.left = '-200px'; // 메뉴 바 닫기
+            } else {
+                sidebar.style.left = '0'; // 메뉴 바 열기
+            }
+        }
+
+        // 메뉴 바 바깥을 클릭하면 메뉴 닫기
+        document.addEventListener('click', function(event) {
+            // 메뉴 바와 바깥 영역을 제외한 클릭은 메뉴 닫기
+            if (!sidebar.contains(event.target) && !sidebarWrapper.contains(event.target) && !event.target.classList.contains('menu-toggle-btn')) {
+                sidebar.style.left = '-200px'; // 메뉴 바 닫기
+            }
+        });
+
+    </script>
+    <script> /*계산기*/
+        let isDragging = false;
+        let offsetX, offsetY;
+        let currentInput = "";
+
+        
+        // 팝업 계산기 열기
+        function openCalculator() {
+            document.getElementById('calculatorPopup').style.display = 'block';
+            document.getElementById('openCalculatorBtn').style.display = 'none'; // 버튼 숨김
+        }
+        
+        // 팝업 계산기 닫기
+        function closeCalculator() {
+            document.getElementById('calculatorPopup').style.display = 'none';
+            document.getElementById('openCalculatorBtn').style.display = 'block'; // 버튼 다시 보이게
+        }
+        
+        // 계산기 화면에 값 추가
+        function appendValue(value) {
+            const display = document.getElementById('calcDisplay');
+            if (display.value === '0' && value !== '.') {
+                display.value = value; // 0으로 시작하지 않게 처리
+            } else {
+                display.value += value;
+            }
+        }
+        
+        
+        // 계산기 화면 초기화
+        function clearDisplay() {
+            currentInput = "";
+            document.getElementById('calcDisplay').value = '0';
+        }
+
+        function clearLast() {
+            const display = document.getElementById('calcDisplay');
+            display.value = display.value.slice(0, -1);  // 마지막 문자 삭제
+        }
+        
+        // 계산 결과 계산
+        function calculateResult() {
+            const display = document.getElementById('calcDisplay');
+        
+            try {
+                // 수학 함수 처리: 수식에서 "sin", "cos", "tan", "log", "ln", "√" 등을 Math 객체의 함수로 변환
+                let processedInput = display.value
+                    .replace(/sin/g, 'Math.sin')
+                    .replace(/cos/g, 'Math.cos')
+                    .replace(/tan/g, 'Math.tan')
+                    .replace(/log/g, 'Math.log')
+                    .replace(/ln/g, 'Math.log') // ln은 log로 처리
+                    .replace(/√/g, 'Math.sqrt') // 제곱근
+                    .replace(/π/g, 'Math.PI')
+                    .replace(/e/g, 'Math.E')
+                    .replace(/x!/g, 'factorial'); // 팩토리얼 처리 추가
+                // 변환된 수식 로그 출력 (디버깅용)
+                console.log("Processed input: " + processedInput);
+
+                // 수식을 처리 (eval 사용)
+                let result = eval(processedInput);
+
+                // 계산된 결과가 'undefined'인지 확인
+                if (result === undefined) {
+                    display.value = "Error"; // undefined 처리
+                } else {
+                    display.value = result; // 정상 결과 표시
+                }
+            } catch (e) {
+                // 오류가 발생하면 "Error" 표시
+                display.value = "Error";
+            }
+        }
+        
+        // 팩토리얼 계산 함수
+        function factorial(n) {
+            if (n === 0 || n === 1) return 1;
+            let f = 1;
+            for (let i = 2; i <= n; i++) {
+                f *= i;
+            }
+            return f;
+        }
+        // 드래그 기능
+        const dragHeader = document.getElementById('dragHeader');
+        
+        dragHeader.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offsetX = e.clientX - document.getElementById('calculatorPopup').offsetLeft;
+            offsetY = e.clientY - document.getElementById('calculatorPopup').offsetTop;
+            
+            // 마우스 이동 중 위치 업데이트
+            document.addEventListener('mousemove', dragMove);
+            document.addEventListener('mouseup', stopDragging);
+        });
+        
+        function dragMove(e) {
+            if (isDragging) {
+                const popup = document.getElementById('calculatorPopup');
+                popup.style.left = (e.clientX - offsetX) + 'px';
+                popup.style.top = (e.clientY - offsetY) + 'px';
+            }
+        }
+        
+        function stopDragging() {
+            isDragging = false;
+            document.removeEventListener('mousemove', dragMove);
+            document.removeEventListener('mouseup', stopDragging);
+        }
+    </script>
+    
 </body>
 </html>

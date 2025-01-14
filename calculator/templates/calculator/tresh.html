@@ -22,3 +22,429 @@
             <li>최대 전단력 (F_smax): {{ result.F_shear_max }} N</li>
         </ul>
     {% endif %}
+
+
+
+    
+"""
+{% if r_values %} 
+{% for r_value in r_values %}
+    <p class="input-details">输入的 r 值 (r{{ forloop.counter }}): {{ r_value }} mm</p>
+{% endfor %}
+{% else %}
+<p class="error">未提供有效的输入。请确保输入了 r 值。</p>
+{% endif %}
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<button id="openCalculatorBtn" class="open-calculator-btn" onclick="openCalculator()">打开计算机</button>
+<div id="calculatorPopup" class="calculator-popup">
+    <div class="calculator-popup-header" id="dragHeader">
+        <span>计算机</span>
+        <button onclick="closeCalculator()">X</button>
+    </div>
+    <div class="calculator-body">
+        <input type="text" id="calcDisplay" disabled placeholder="0">
+        <div class="calculator-buttons">
+            <button onclick="clearDisplay()">AC</button>
+            <button onclick="clearLast('C')">C</button>
+            <button onclick="appendValue('/')">÷</button>
+            <button onclick="appendValue('*')">x</button>
+            <button onclick="appendValue('7')">7</button>
+            <button onclick="appendValue('8')">8</button>
+            <button onclick="appendValue('9')">9</button>
+            <button onclick="appendValue('-')">-</button>
+            <button onclick="appendValue('4')">4</button>
+            <button onclick="appendValue('5')">5</button>
+            <button onclick="appendValue('6')">6</button>
+            <button onclick="appendValue('+')">+</button>
+            <button onclick="appendValue('1')">1</button>
+            <button onclick="appendValue('2')">2</button>
+            <button onclick="appendValue('3')">3</button>
+            <button onclick="calculateResult()">=</button>
+            <button onclick="appendValue('0')">0</button>
+            <button onclick="appendValue('.')">.</button>
+            <button onclick="appendValue('(')">(</button>
+            <button onclick="appendValue(')')">)</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</div>
+
+<script> /*계산기*/
+    let isDragging = false;
+    let offsetX, offsetY;
+    let currentInput = "";
+
+    
+    // 팝업 계산기 열기
+    function openCalculator() {
+        document.getElementById('calculatorPopup').style.display = 'block';
+        document.getElementById('openCalculatorBtn').style.display = 'none'; // 버튼 숨김
+    }
+    
+    // 팝업 계산기 닫기
+    function closeCalculator() {
+        document.getElementById('calculatorPopup').style.display = 'none';
+        document.getElementById('openCalculatorBtn').style.display = 'block'; // 버튼 다시 보이게
+    }
+    
+    // 계산기 화면에 값 추가
+    function appendValue(value) {
+        const display = document.getElementById('calcDisplay');
+        if (display.value === '0' && value !== '.') {
+            display.value = value; // 0으로 시작하지 않게 처리
+        } else {
+            display.value += value;
+        }
+    }
+    
+    
+    // 계산기 화면 초기화
+    function clearDisplay() {
+        currentInput = "";
+        document.getElementById('calcDisplay').value = '0';
+    }
+
+    function clearLast() {
+        const display = document.getElementById('calcDisplay');
+        display.value = display.value.slice(0, -1);  // 마지막 문자 삭제
+    }
+    
+    // 계산 결과 계산
+    function calculateResult() {
+        const display = document.getElementById('calcDisplay');
+    
+        try {
+            // 수학 함수 처리: 수식에서 "sin", "cos", "tan", "log", "ln", "√" 등을 Math 객체의 함수로 변환
+            let processedInput = display.value
+                .replace(/sin/g, 'Math.sin')
+                .replace(/cos/g, 'Math.cos')
+                .replace(/tan/g, 'Math.tan')
+                .replace(/log/g, 'Math.log')
+                .replace(/ln/g, 'Math.log') // ln은 log로 처리
+                .replace(/√/g, 'Math.sqrt') // 제곱근
+                .replace(/π/g, 'Math.PI')
+                .replace(/e/g, 'Math.E')
+                .replace(/x!/g, 'factorial'); // 팩토리얼 처리 추가
+            // 변환된 수식 로그 출력 (디버깅용)
+            console.log("Processed input: " + processedInput);
+
+            // 수식을 처리 (eval 사용)
+            let result = eval(processedInput);
+
+            // 계산된 결과가 'undefined'인지 확인
+            if (result === undefined) {
+                display.value = "Error"; // undefined 처리
+            } else {
+                display.value = result; // 정상 결과 표시
+            }
+        } catch (e) {
+            // 오류가 발생하면 "Error" 표시
+            display.value = "Error";
+        }
+    }
+    
+    // 팩토리얼 계산 함수
+    function factorial(n) {
+        if (n === 0 || n === 1) return 1;
+        let f = 1;
+        for (let i = 2; i <= n; i++) {
+            f *= i;
+        }
+        return f;
+    }
+    // 드래그 기능
+    const dragHeader = document.getElementById('dragHeader');
+    
+    dragHeader.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        offsetX = e.clientX - document.getElementById('calculatorPopup').offsetLeft;
+        offsetY = e.clientY - document.getElementById('calculatorPopup').offsetTop;
+        
+        // 마우스 이동 중 위치 업데이트
+        document.addEventListener('mousemove', dragMove);
+        document.addEventListener('mouseup', stopDragging);
+    });
+    
+    function dragMove(e) {
+        if (isDragging) {
+            const popup = document.getElementById('calculatorPopup');
+            popup.style.left = (e.clientX - offsetX) + 'px';
+            popup.style.top = (e.clientY - offsetY) + 'px';
+        }
+    }
+    
+    function stopDragging() {
+        isDragging = false;
+        document.removeEventListener('mousemove', dragMove);
+        document.removeEventListener('mouseup', stopDragging);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    <button id="openPopupBtn" class="open-popup-btn" onclick="openPopup()">打开单位转换器</button>
+    <div class="popup" id="unit-converter-popup">
+        <div class="header" id="dragHeader">
+            <span>单位转换器</span>
+            <button onclick="closePopup()">X</button>
+        </div>
+
+        <!-- 选择转换项 -->
+        <label for="unit-type">选择转换项:</label>
+        <select id="unit-type" onchange="updateUnitOptions()">
+            <option value="length">长度</option>
+            <option value="force">力</option>
+            <option value="pressure">压力</option>
+            <option value="strength">强度</option>
+            <option value="moment">力矩</option>
+        </select>
+
+        <!-- 长度转换 -->
+        <div id="length-units" class="unit-group">
+            <label for="length-from">输出单位:</label>
+            <select id="length-from">
+                <option value="um">微米 (um)</option>
+                <option value="mm">毫米 (mm)</option>
+                <option value="cm">厘米 (cm)</option>
+                <option value="m">米 (m)</option>
+                <option value="km">千米 (km)</option>
+            </select>
+
+            <label for="length-to">转换单位:</label>
+            <select id="length-to">
+                <option value="um">微米 (um)</option>
+                <option value="mm">毫米 (mm)</option>
+                <option value="cm">厘米 (cm)</option>
+                <option value="m">米 (m)</option>
+                <option value="km">千米 (km)</option>
+            </select>
+        </div>
+
+        <!-- 力转换 -->
+        <div id="force-units" class="unit-group" style="display: none;">
+            <label for="force-from">输出单位:</label>
+            <select id="force-from">
+                <option value="kgf">千克力 (kgf)</option>
+                <option value="N">牛顿 (N)</option>
+                <option value="lbf">磅力 (lbf)</option>
+            </select>
+
+            <label for="force-to">转换单位:</label>
+            <select id="force-to">
+                <option value="kgf">千克力 (kgf)</option>
+                <option value="N">牛顿 (N)</option>
+                <option value="lbf">磅力 (lbf)</option>
+            </select>
+        </div>
+
+        <!-- 压力转换 -->
+        <div id="pressure-units" class="unit-group" style="display: none;">
+            <label for="pressure-from">输出单位:</label>
+            <select id="pressure-from">
+                <option value="Pa">帕斯卡 (Pa)</option>
+            </select>
+
+            <label for="pressure-to">转换单位:</label>
+            <select id="pressure-to">
+                <option value="Pa">帕斯卡 (Pa)</option>
+            </select>
+        </div>
+
+        <!-- 强度转换 -->
+        <div id="strength-units" class="unit-group" style="display: none;">
+            <label for="strength-from">输出单位:</label>
+            <select id="strength-from">
+                <option value="N/mm²">N/mm²</option>
+                <option value="MPa">兆帕 (MPa)</option>
+            </select>
+
+            <label for="strength-to">转换单位:</label>
+            <select id="strength-to">
+                <option value="N/mm²">N/mm²</option>
+                <option value="MPa">兆帕 (MPa)</option>
+            </select>
+        </div>
+
+        <!-- 力矩转换 -->
+        <div id="moment-units" class="unit-group" style="display: none;">
+            <label for="moment-from">输出单位:</label>
+            <select id="moment-from">
+                <option value="N·m">牛顿·米 (N·m)</option>
+                <option value="lbf·in">磅力·英寸 (lbf·in)</option>
+            </select>
+
+            <label for="moment-to">转换单位:</label>
+            <select id="moment-to">
+                <option value="N·m">牛顿·米 (N·m)</option>
+                <option value="lbf·in">磅力·英寸 (lbf·in)</option>
+            </select>
+        </div>
+
+        <label for="value">输入值:</label>
+        <input type="number" id="value" placeholder="请输入数字" oninput="convertUnit()">
+
+        <div class="result">
+            <p>转换后的值: <span id="result-value"></span></p>
+        </div>
+
+        <button onclick="convertUnit()">开始转换</button>
+    </div>
+
+    <script>
+        function openPopup() {
+            document.getElementById('unit-converter-popup').style.display = 'block';
+            document.getElementById('openPopupBtn').style.display = 'none';
+        }
+
+        function closePopup() {
+            document.getElementById('unit-converter-popup').style.display = 'none';
+            document.getElementById('openPopupBtn').style.display = 'block';
+        }s
+
+        // 根据选择的单位类型更新单位选项
+        function updateUnitOptions() {
+            const unitType = document.getElementById('unit-type').value;
+            const unitGroups = document.querySelectorAll('.unit-group');
+            unitGroups.forEach(group => group.style.display = 'none');
+            document.getElementById(unitType + '-units').style.display = 'block';
+        }
+
+        // 单位转换函数
+        function convertUnit() {
+            const value = parseFloat(document.getElementById('value').value);
+            if (isNaN(value)) return;
+
+            let result;
+            const unitType = document.getElementById('unit-type').value;
+
+            if (unitType === 'length') {
+                result = convertLength();
+            } else if (unitType === 'force') {
+                result = convertForce();
+            } else if (unitType === 'pressure') {
+                result = convertPressure();
+            } else if (unitType === 'strength') {
+                result = convertStrength();
+            } else if (unitType === 'moment') {
+                result = convertMoment();
+            }
+
+            document.getElementById('result-value').innerText = result;
+        }
+
+        // 长度转换函数
+        function convertLength() {
+            const fromUnit = document.getElementById('length-from').value;
+            const toUnit = document.getElementById('length-to').value;
+            const value = parseFloat(document.getElementById('value').value);
+            let result = value;
+
+            // 单位转换公式 (简单示例)
+            if (fromUnit === 'mm' && toUnit === 'm') {
+                result = value / 1000;
+            } else if (fromUnit === 'm' && toUnit === 'km') {
+                result = value / 1000;
+            }
+
+            return result;
+        }
+
+        // 力转换函数
+        function convertForce() {
+            const fromUnit = document.getElementById('force-from').value;
+            const toUnit = document.getElementById('force-to').value;
+            const value = parseFloat(document.getElementById('value').value);
+            let result = value;
+
+            // 单位转换公式 (简单示例)
+            if (fromUnit === 'kgf' && toUnit === 'N') {
+                result = value * 9.81; // 1 kgf = 9.81 N
+            }
+
+            return result;
+        }
+
+        // 压力转换函数
+        function convertPressure() {
+            const value = parseFloat(document.getElementById('value').value);
+            return value; // Pa只转换
+        }
+
+        // 强度转换函数
+        function convertStrength() {
+            const fromUnit = document.getElementById('strength-from').value;
+            const toUnit = document.getElementById('strength-to').value;
+            const value = parseFloat(document.getElementById('value').value);
+            let result = value;
+
+            // 单位转换公式 (简单示例)
+            if (fromUnit === 'N/mm²' && toUnit === 'MPa') {
+                result = value; // 1 N/mm² = 1 MPa
+            }
+
+            return result;
+        }
+
+        // 力矩转换函数
+        function convertMoment() {
+            const fromUnit = document.getElementById('moment-from').value;
+            const toUnit = document.getElementById('moment-to').value;
+            const value = parseFloat(document.getElementById('value').value);
+            let result = value;
+
+            // 单位转换公式 (简单示例)
+            if (fromUnit === 'N·m' && toUnit === 'lbf·in') {
+                result = value * 8.8507; // 1 N·m = 8.8507 lbf·in
+            }
+
+            return result;
+        }
+        const dragHeader = document.getElementById('dragHeader');
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        dragHeader.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offsetX = e.clientX - document.getElementById('unit-converter-popup').offsetLeft;
+            offsetY = e.clientY - document.getElementById('unit-converter-popup').offsetTop;
+
+            document.addEventListener('mousemove', dragMove);
+            document.addEventListener('mouseup', stopDragging);
+        });
+
+        function dragMove(e) {
+            if (isDragging) {
+                const popup = document.getElementById('unit-converter-popup');
+                popup.style.left = (e.clientX - offsetX) + 'px';
+                popup.style.top = (e.clientY - offsetY) + 'px';
+            }
+        }
+        function stopDragging() {
+            isDragging = false;
+            document.removeEventListener('mousemove', dragMove);
+            document.removeEventListener('mouseup', stopDragging);
+        }
+    </script>
