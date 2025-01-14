@@ -26,7 +26,7 @@ STATIC_URL = '/static/'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1','screw-joint-0bc43cf2db7b.herokuapp.com']
+ALLOWED_HOSTS = ['screw-joint-0bc43cf2db7b.herokuapp.com']
 
 SECRET_KEY = 'fprh8070'
 
@@ -81,6 +81,9 @@ WSGI_APPLICATION = 'screw_joint.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(default='sqlite:///db.sqlite3')
 }
+
+db_from_env = dj_database_url.config(conn_max_ago=500)
+DATABASES['default'].update(db_from_env)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
