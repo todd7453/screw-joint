@@ -28,7 +28,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-SECRET_KEY = 'fprh8070'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'fprh8070')
 
 # Application definition
 
@@ -86,10 +86,6 @@ DATABASES = {
 
 db_from_env = dj_database_url.config(conn_max_age=500)
 DATABASES['default'].update(db_from_env)
-
-
-DATABASES = {'default': dj_database_url.config()}
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
